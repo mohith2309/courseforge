@@ -368,13 +368,14 @@ const server = http.createServer(async (req, res) => {
       }
       if (p === '/ai/lesson') {
         const pr = lessonPrompt(String(body.courseTitle || '').slice(0, 200), String(body.moduleTitle || '').slice(0, 200), String(body.lessonTitle || '').slice(0, 200), String(body.summary || '').slice(0, 500));
-        // Sequential with AGGRESSIVE caps so a provider that hangs (cloud-IP throttling
-        // happens intermittently from datacenters) bails fast to the next. Groq normally
-        // answers in ~4s; if it stalls we give up at 8s and Mistral/NVIDIA rescue it.
-        // Worst case ~26s (all stall) vs the app's 120s wait. GitHub/Gemini omitted.
-        if (GROQ_LIVE) { try { return send(res, req, 200, parseLooseJson(await groq(pr, { json: true, maxTokens: 2400, timeoutMs: 12000 }))); } catch {} }
-        if (MISTRAL_LIVE) { try { return send(res, req, 200, parseLooseJson(await mistral(pr, { json: true, maxTokens: 2400, timeoutMs: 16000 }))); } catch {} }
-        try { return send(res, req, 200, parseLooseJson(await nim(pr, { maxTokens: 1800, temperature: 0.6, json: true, timeoutMs: 14000 }))); } catch {}
+        // Diag-verified provider speeds for a lesson-sized gen (from Railway):
+        // Groq ~2-3s (best), NVIDIA 8B ~8s, GitHub gpt-4.1-mini ~12s; Mistral-large
+        // is too slow (>20s) so it's NOT in the lesson path. maxTokens trimmed to 1800
+        // (a full ~450-word lesson) to keep every provider fast. One lesson ≈ 2k tokens,
+        // well under Groq's 12k/min, so Groq serves real one-at-a-time use every time.
+        if (GROQ_LIVE) { try { return send(res, req, 200, parseLooseJson(await groq(pr, { json: true, maxTokens: 1800, timeoutMs: 12000 }))); } catch {} }
+        try { return send(res, req, 200, parseLooseJson(await nim(pr, { maxTokens: 1800, temperature: 0.6, json: true, timeoutMs: 16000 }))); } catch {}
+        if (GH_LIVE) { try { return send(res, req, 200, parseLooseJson(await ghModels(pr, { json: true, maxTokens: 1800, timeoutMs: 18000 }))); } catch {} }
         return send(res, req, 503, { error: 'could not generate lesson' });
       }
       if (p === '/ai/doubt') {
