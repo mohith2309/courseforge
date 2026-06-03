@@ -353,12 +353,13 @@ const server = http.createServer(async (req, res) => {
       }
       if (p === '/ai/lesson') {
         const pr = lessonPrompt(String(body.courseTitle || '').slice(0, 200), String(body.moduleTitle || '').slice(0, 200), String(body.lessonTitle || '').slice(0, 200), String(body.summary || '').slice(0, 500));
-        // Sequential, tight caps: Groq 70B (~4s, primary) → NVIDIA 8B (~2.5s floor)
-        // → Mistral large (quality backup). Lessons load one-at-a-time as the user
-        // reads, so this serves in ~4s in real use. GitHub/Gemini omitted (limit/quota).
-        if (GROQ_LIVE) { try { return send(res, req, 200, parseLooseJson(await groq(pr, { json: true, maxTokens: 2400, timeoutMs: 14000 }))); } catch {} }
-        try { return send(res, req, 200, parseLooseJson(await nim(pr, { maxTokens: 1800, temperature: 0.6, json: true, timeoutMs: 16000 }))); } catch {}
-        if (MISTRAL_LIVE) { try { return send(res, req, 200, parseLooseJson(await mistral(pr, { json: true, maxTokens: 2400, timeoutMs: 14000 }))); } catch {} }
+        // Sequential with AGGRESSIVE caps so a provider that hangs (cloud-IP throttling
+        // happens intermittently from datacenters) bails fast to the next. Groq normally
+        // answers in ~4s; if it stalls we give up at 8s and Mistral/NVIDIA rescue it.
+        // Worst case ~26s (all stall) vs the app's 120s wait. GitHub/Gemini omitted.
+        if (GROQ_LIVE) { try { return send(res, req, 200, parseLooseJson(await groq(pr, { json: true, maxTokens: 2400, timeoutMs: 8000 }))); } catch {} }
+        if (MISTRAL_LIVE) { try { return send(res, req, 200, parseLooseJson(await mistral(pr, { json: true, maxTokens: 2400, timeoutMs: 9000 }))); } catch {} }
+        try { return send(res, req, 200, parseLooseJson(await nim(pr, { maxTokens: 1800, temperature: 0.6, json: true, timeoutMs: 9000 }))); } catch {}
         return send(res, req, 503, { error: 'could not generate lesson' });
       }
       if (p === '/ai/doubt') {
