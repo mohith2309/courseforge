@@ -341,12 +341,13 @@ const server = http.createServer(async (req, res) => {
         return send(res, req, 401, { error: 'app key required' });
       // Diagnostic: probe each provider from inside the server (not rate-limited).
       if (p === '/ai/diag') {
-        const probe = (fn) => { const s = Date.now(); return fn().then((r) => ({ ok: true, ms: Date.now() - s, out: String(r).slice(0, 24) })).catch((e) => ({ ok: false, ms: Date.now() - s, err: String((e && e.message) || e).slice(0, 70) })); };
+        const pr = lessonPrompt('IAS', 'Polity', 'Fundamental Rights', 'Articles 12-35'); // real workload
+        const probe = (fn) => { const s = Date.now(); return fn().then((r) => ({ ok: true, ms: Date.now() - s, len: String(r).length })).catch((e) => ({ ok: false, ms: Date.now() - s, err: String((e && e.message) || e).slice(0, 70) })); };
         const out = {};
-        out.groq = GROQ_LIVE ? await probe(() => groq('hi', { maxTokens: 8, timeoutMs: 12000 })) : 'off';
-        out.mistral = MISTRAL_LIVE ? await probe(() => mistral('hi', { maxTokens: 8, timeoutMs: 12000 })) : 'off';
-        out.nim = await probe(() => nim('hi', { maxTokens: 8, timeoutMs: 12000 }));
-        out.github = GH_LIVE ? await probe(() => ghModels('hi', { maxTokens: 8, timeoutMs: 12000 })) : 'off';
+        out.groq = GROQ_LIVE ? await probe(() => groq(pr, { json: true, maxTokens: 2400, timeoutMs: 20000 })) : 'off';
+        out.mistral = MISTRAL_LIVE ? await probe(() => mistral(pr, { json: true, maxTokens: 2400, timeoutMs: 20000 })) : 'off';
+        out.nim = await probe(() => nim(pr, { json: true, maxTokens: 1800, timeoutMs: 20000 }));
+        out.github = GH_LIVE ? await probe(() => ghModels(pr, { json: true, maxTokens: 2400, timeoutMs: 20000 })) : 'off';
         return send(res, req, 200, out);
       }
       if (!rateLimit(`ai:${ip}`, 12, 60000)) return send(res, req, 429, { error: 'AI rate limit — slow down' });
