@@ -368,13 +368,13 @@ const server = http.createServer(async (req, res) => {
       }
       if (p === '/ai/lesson') {
         const pr = lessonPrompt(String(body.courseTitle || '').slice(0, 200), String(body.moduleTitle || '').slice(0, 200), String(body.lessonTitle || '').slice(0, 200), String(body.summary || '').slice(0, 500));
-        // maxTokens 2600 to fit a full 700-850 word taught lesson + keyPoints + quiz.
-        // Chain (Groq daily-limited today → falls to the rest): Groq 70B → Mistral-small
-        // → NVIDIA 8B → GitHub gpt-4.1-mini. Timeouts sized for the longer generation.
+        // maxTokens 2600 for a full 700-850 word taught lesson. Benchmarked length+parse:
+        // Groq 70B (best, ~5s) → Mistral-small (765w, ~13s, separate quota, serves today)
+        // → GitHub gpt-4.1-mini (~480-600w). NVIDIA dropped: 8B emits malformed JSON on
+        // long gens (parse fail → garbage), 70B times out. Timeouts sized for length.
         if (GROQ_LIVE) { try { return send(res, req, 200, parseLooseJson(await groq(pr, { json: true, maxTokens: 2600, timeoutMs: 16000 }))); } catch {} }
-        if (MISTRAL_LIVE) { try { return send(res, req, 200, parseLooseJson(await mistral(pr, { json: true, maxTokens: 2600, model: 'mistral-small-latest', timeoutMs: 20000 }))); } catch {} }
-        try { return send(res, req, 200, parseLooseJson(await nim(pr, { maxTokens: 2600, temperature: 0.6, json: true, timeoutMs: 22000 }))); } catch {}
-        if (GH_LIVE) { try { return send(res, req, 200, parseLooseJson(await ghModels(pr, { json: true, maxTokens: 2600, timeoutMs: 22000 }))); } catch {} }
+        if (MISTRAL_LIVE) { try { return send(res, req, 200, parseLooseJson(await mistral(pr, { json: true, maxTokens: 2600, model: 'mistral-small-latest', timeoutMs: 22000 }))); } catch {} }
+        if (GH_LIVE) { try { return send(res, req, 200, parseLooseJson(await ghModels(pr, { json: true, maxTokens: 2600, timeoutMs: 24000 }))); } catch {} }
         return send(res, req, 503, { error: 'could not generate lesson' });
       }
       if (p === '/ai/doubt') {
