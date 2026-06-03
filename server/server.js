@@ -207,7 +207,7 @@ Module: ${moduleTitle}
 Lesson: ${lessonTitle}
 ${summary ? `Focus: ${summary}\n` : ''}
 Return ONLY JSON: {"script":"","keyPoints":["..."],"quiz":{"questions":[{"stem":"","options":["","","",""],"correctIndex":0,"explanation":""}]}}
-The "script" MUST be 450-550 words across 4-5 paragraphs that genuinely TEACH: define the idea, give a concrete worked example, explain step by step WHY it works, and warn about common mistakes. Conversational, not a bullet list. keyPoints: 5-7 bullets. quiz: exactly 3 questions, 4 options each, one correct, with explanations.`;
+The "script" MUST be 700-850 words across 6-7 substantial paragraphs that genuinely TEACH like a real class: (1) hook + plain-language definition, (2) an everyday analogy, (3) a concrete worked example with the steps shown, (4) explain step by step WHY it works, (5) a second example or a contrasting case, (6) common mistakes/misconceptions and how to avoid them, (7) a short recap. Conversational and flowing prose, NOT bullet points, NOT headings. keyPoints: 6-8 bullets. quiz: exactly 3 questions, 4 options each, one correct, with explanations.`;
 }
 function parseLooseJson(text) {
   const s = text.indexOf('{'), e = text.lastIndexOf('}');
@@ -368,17 +368,13 @@ const server = http.createServer(async (req, res) => {
       }
       if (p === '/ai/lesson') {
         const pr = lessonPrompt(String(body.courseTitle || '').slice(0, 200), String(body.moduleTitle || '').slice(0, 200), String(body.lessonTitle || '').slice(0, 200), String(body.summary || '').slice(0, 500));
-        // Diag-verified provider speeds for a lesson-sized gen (from Railway):
-        // Groq ~2-3s (best), NVIDIA 8B ~8s, GitHub gpt-4.1-mini ~12s; Mistral-large
-        // is too slow (>20s) so it's NOT in the lesson path. maxTokens trimmed to 1800
-        // (a full ~450-word lesson) to keep every provider fast. One lesson ≈ 2k tokens,
-        // well under Groq's 12k/min, so Groq serves real one-at-a-time use every time.
-        if (GROQ_LIVE) { try { return send(res, req, 200, parseLooseJson(await groq(pr, { json: true, maxTokens: 1800, timeoutMs: 12000 }))); } catch {} }
-        // Mistral SMALL (not large) — fast (~7s) and on SEPARATE quota, so it covers Groq
-        // outages/daily-limit without the slowness of mistral-large.
-        if (MISTRAL_LIVE) { try { return send(res, req, 200, parseLooseJson(await mistral(pr, { json: true, maxTokens: 1800, model: 'mistral-small-latest', timeoutMs: 16000 }))); } catch {} }
-        try { return send(res, req, 200, parseLooseJson(await nim(pr, { maxTokens: 1800, temperature: 0.6, json: true, timeoutMs: 16000 }))); } catch {}
-        if (GH_LIVE) { try { return send(res, req, 200, parseLooseJson(await ghModels(pr, { json: true, maxTokens: 1800, timeoutMs: 18000 }))); } catch {} }
+        // maxTokens 2600 to fit a full 700-850 word taught lesson + keyPoints + quiz.
+        // Chain (Groq daily-limited today → falls to the rest): Groq 70B → Mistral-small
+        // → NVIDIA 8B → GitHub gpt-4.1-mini. Timeouts sized for the longer generation.
+        if (GROQ_LIVE) { try { return send(res, req, 200, parseLooseJson(await groq(pr, { json: true, maxTokens: 2600, timeoutMs: 16000 }))); } catch {} }
+        if (MISTRAL_LIVE) { try { return send(res, req, 200, parseLooseJson(await mistral(pr, { json: true, maxTokens: 2600, model: 'mistral-small-latest', timeoutMs: 20000 }))); } catch {} }
+        try { return send(res, req, 200, parseLooseJson(await nim(pr, { maxTokens: 2600, temperature: 0.6, json: true, timeoutMs: 22000 }))); } catch {}
+        if (GH_LIVE) { try { return send(res, req, 200, parseLooseJson(await ghModels(pr, { json: true, maxTokens: 2600, timeoutMs: 22000 }))); } catch {} }
         return send(res, req, 503, { error: 'could not generate lesson' });
       }
       if (p === '/ai/doubt') {

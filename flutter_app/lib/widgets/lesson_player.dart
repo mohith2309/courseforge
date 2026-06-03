@@ -68,16 +68,17 @@ class _LessonPlayerState extends State<LessonPlayer> {
     // slides (~2 sentences each) so it plays like a narrated lesson.
     final chunks = _chunkScript(l.script);
     final total = chunks.length;
-    // Free = shortened (first ~4 chunks) + an upgrade card; Pro = full lesson.
-    final shown = widget.isPro ? chunks : chunks.take(4).toList();
-    for (var n = 0; n < shown.length; n++) {
-      slides.add(_Slide('LESSON · ${n + 1}/$total', shown[n]));
+    // Everyone gets the FULL lesson — gating the teaching content made it feel
+    // like a short PPT. Premium is for the watermark-free player, unlimited AI
+    // courses, and extra practice quizzes (see the nudge below).
+    for (var n = 0; n < chunks.length; n++) {
+      slides.add(_Slide('LESSON · ${n + 1}/$total', chunks[n]));
     }
-    if (!widget.isPro && total > shown.length) {
+    if (!widget.isPro && chunks.isNotEmpty) {
       slides.add(_Slide(
         'PRO',
-        'You\'re seeing the short version. Upgrade to watch the full lesson '
-        '(${total - shown.length} more parts) with no watermark.',
+        'You\'ve got the full lesson free. Upgrade for a watermark-free player, '
+        'unlimited AI-built courses, and extra practice quizzes.',
         locked: true,
       ));
     }
@@ -101,8 +102,8 @@ class _LessonPlayerState extends State<LessonPlayer> {
         .where((s) => s.trim().isNotEmpty)
         .toList();
     final out = <String>[];
-    for (var i = 0; i < sentences.length; i += 2) {
-      out.add(sentences.sublist(i, (i + 2).clamp(0, sentences.length)).join(' '));
+    for (var i = 0; i < sentences.length; i += 3) {
+      out.add(sentences.sublist(i, (i + 3).clamp(0, sentences.length)).join(' '));
     }
     return out;
   }
