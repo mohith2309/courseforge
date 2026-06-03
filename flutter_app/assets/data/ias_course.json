@@ -1,0 +1,639 @@
+{
+  "id": "ias-prelims-2026",
+  "title": "UPSC IAS Prelims Foundation",
+  "subtitle": "Polity, History, Geography & Economy — built for first-attempt aspirants",
+  "description": "A structured, exam-first foundation course for the UPSC Civil Services Prelims. Covers the high-yield static portions of GS Paper 1 with NCERT-aligned lessons, key-point revision, and 60%-to-pass MCQ checks after every lesson. Designed by an active aspirant so the depth matches what Prelims actually rewards.",
+  "category": "Exam Prep",
+  "tags": ["UPSC", "IAS", "Prelims", "Polity", "History", "Geography", "Economy"],
+  "creatorId": "creator-ias",
+  "priceInr": 299,
+  "thumbnailEmoji": "🏛️",
+  "rating": 4.8,
+  "reviewCount": 412,
+  "enrollmentsCount": 5234,
+  "featured": true,
+  "modules": [
+    {
+      "id": "m1",
+      "title": "Module 1 — UPSC Prelims Basics",
+      "description": "How the exam is built, what each paper tests, and how to read the syllabus like a topper.",
+      "order": 1,
+      "lessons": [
+        {
+          "id": "m1l1",
+          "moduleId": "m1",
+          "title": "What is UPSC? Prelims vs Mains",
+          "summary": "The Civil Services Examination has three stages — Prelims (screening), Mains (written), and Interview. Prelims is objective and qualifying only; marks do not carry to Mains.",
+          "script": "The UPSC Civil Services Examination (CSE) selects officers for the IAS, IPS, IFS and other Group A/B services. It runs in three stages.\n\nStage 1 — Preliminary Examination (Prelims): Two objective papers held on the same day. General Studies Paper 1 (GS) and the Civil Services Aptitude Test (CSAT). Prelims is purely a screening test — its marks are NOT added to your final rank. You only need to clear the cut-off to move on.\n\nStage 2 — Main Examination (Mains): Nine descriptive papers, including four GS papers, two optional-subject papers, an essay, and two qualifying language papers. Mains marks DO count toward the final merit list.\n\nStage 3 — Personality Test (Interview): A 275-mark board interview.\n\nFinal rank = Mains (1750) + Interview (275) = 2025 marks. Prelims gets you a seat in the hall for Mains; nothing more, nothing less.\n\nWhy this matters strategically: many beginners over-invest in Prelims-only trivia. The smart approach is to study topics that serve BOTH Prelims and Mains, then add Prelims-specific practice (MCQs, current affairs) in the final 3-4 months.",
+          "keyPoints": [
+            "CSE has 3 stages: Prelims, Mains, Interview.",
+            "Prelims is objective and only qualifying — marks don't carry forward.",
+            "Prelims = GS Paper 1 + CSAT, both on the same day.",
+            "Mains has 9 papers; final rank = Mains (1750) + Interview (275).",
+            "Study topics common to Prelims AND Mains first; add MCQ practice later."
+          ],
+          "durationMinutes": 12,
+          "order": 1,
+          "freePreview": true,
+          "quiz": {
+            "id": "m1l1q",
+            "title": "Check: Exam structure",
+            "passPercentage": 60,
+            "questions": [
+              {
+                "stem": "Marks scored in the Prelims examination are:",
+                "options": ["Added to the Mains total", "Only used to qualify for Mains", "Added to the interview score", "Half-weighted into the final rank"],
+                "correctIndex": 1,
+                "explanation": "Prelims is a screening stage. Its marks are used only to decide who qualifies for Mains and are not counted in the final merit list."
+              },
+              {
+                "stem": "The final merit rank in CSE is decided by:",
+                "options": ["Prelims + Mains", "Mains + Interview", "Prelims + Interview", "Prelims + Mains + Interview"],
+                "correctIndex": 1,
+                "explanation": "Final rank = Mains (1750 marks) + Personality Test (275 marks) = 2025 marks. Prelims is excluded."
+              },
+              {
+                "stem": "Which two papers make up the Prelims examination?",
+                "options": ["GS Paper 1 and Essay", "GS Paper 1 and CSAT", "Two optional papers", "Essay and Language paper"],
+                "correctIndex": 1,
+                "explanation": "Prelims consists of General Studies Paper 1 and the Civil Services Aptitude Test (CSAT)."
+              }
+            ]
+          }
+        },
+        {
+          "id": "m1l2",
+          "moduleId": "m1",
+          "title": "CSAT Overview & Strategy",
+          "summary": "CSAT (GS Paper 2) is qualifying — you need 33% (66/200). It tests comprehension, logical reasoning, and basic numeracy. Don't ignore it.",
+          "script": "CSAT — the Civil Services Aptitude Test — is Prelims Paper 2. It carries 200 marks but is QUALIFYING only: you must score at least 33% (66 marks). If you fail CSAT, your GS Paper 1 score is irrelevant and you are out.\n\nWhat it tests: reading comprehension (the largest chunk, often 25-30 questions), logical reasoning and analytical ability, basic numeracy (Class X level — ratios, percentages, time-speed-distance, averages), and data interpretation.\n\nNegative marking: 1/3 of the marks for each wrong answer, same as GS Paper 1.\n\nStrategy: Aspirants from a non-math background routinely underestimate CSAT and then miss the cut-off by a few marks. Allocate at least 2-3 hours a week. Comprehension is the highest-return area — practice reading dense passages quickly and answering only from the passage, not outside knowledge. For maths, master the Class VI-X NCERTs and one aptitude book.",
+          "keyPoints": [
+            "CSAT is qualifying: minimum 33% = 66/200 marks.",
+            "Failing CSAT disqualifies you regardless of GS Paper 1 score.",
+            "Tests comprehension, reasoning, and Class-X numeracy.",
+            "Negative marking is 1/3 per wrong answer.",
+            "Comprehension is the highest-yield section — practice passage-only answering."
+          ],
+          "durationMinutes": 11,
+          "order": 2,
+          "freePreview": false,
+          "quiz": {
+            "id": "m1l2q",
+            "title": "Check: CSAT basics",
+            "passPercentage": 60,
+            "questions": [
+              {
+                "stem": "The minimum qualifying score in CSAT is:",
+                "options": ["25% (50 marks)", "33% (66 marks)", "40% (80 marks)", "50% (100 marks)"],
+                "correctIndex": 1,
+                "explanation": "CSAT requires 33%, i.e. 66 out of 200 marks, to qualify. It is otherwise not counted for merit."
+              },
+              {
+                "stem": "If a candidate fails to clear CSAT but scores very high in GS Paper 1, they will:",
+                "options": ["Still qualify for Mains", "Be disqualified from Prelims", "Get a grace pass", "Be moved to the next year"],
+                "correctIndex": 1,
+                "explanation": "Both Prelims papers must meet their conditions. Failing CSAT disqualifies the candidate irrespective of the GS score."
+              }
+            ]
+          }
+        },
+        {
+          "id": "m1l3",
+          "moduleId": "m1",
+          "title": "GS Paper 1 — Topics & Sources",
+          "summary": "GS Paper 1 spans History, Geography, Polity, Economy, Environment, Science & Tech, and Current Affairs. NCERTs are the backbone.",
+          "script": "GS Paper 1 (200 marks, 100 questions, negative marking 1/3) is where merit-determining selection effectively begins. The syllabus areas are: History & Indian National Movement, Indian & World Geography, Indian Polity & Governance, Economic & Social Development, Environment & Ecology, General Science, and Current Events of national & international importance.\n\nWeightage shifts year to year, but Polity, Environment, and Current Affairs have been consistently heavy in recent papers, while pure static Geography and History have become more application-based.\n\nCore sources (the topper consensus): NCERTs (Classes VI-XII) for every subject as the foundation, then one standard reference per subject — Laxmikanth for Polity, Spectrum for Modern History, GC Leong for Physical Geography, and a current-affairs compilation. Resist the urge to collect 10 books per subject; revision beats accumulation.",
+          "keyPoints": [
+            "GS Paper 1: 100 questions, 200 marks, 1/3 negative marking.",
+            "Areas: History, Geography, Polity, Economy, Environment, Science, Current Affairs.",
+            "Polity, Environment, and Current Affairs are consistently high-weight.",
+            "NCERTs are the foundation for every subject.",
+            "Revision of fewer sources beats accumulating many books."
+          ],
+          "durationMinutes": 13,
+          "order": 3,
+          "freePreview": false,
+          "quiz": {
+            "id": "m1l3q",
+            "title": "Check: GS Paper 1",
+            "passPercentage": 60,
+            "questions": [
+              {
+                "stem": "GS Paper 1 of Prelims contains how many questions?",
+                "options": ["80", "100", "120", "150"],
+                "correctIndex": 1,
+                "explanation": "GS Paper 1 has 100 questions for 200 marks, with one-third negative marking."
+              },
+              {
+                "stem": "Which is the most widely recommended foundation source across all GS subjects?",
+                "options": ["Coaching notes", "NCERT textbooks", "Newspapers only", "Previous toppers' blogs"],
+                "correctIndex": 1,
+                "explanation": "NCERTs (Classes VI-XII) form the conceptual foundation; standard references are layered on top."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "m2",
+      "title": "Module 2 — Polity (Indian Constitution)",
+      "description": "The highest-yield Prelims subject. Constitution, rights, principles, and the structure of government.",
+      "order": 2,
+      "lessons": [
+        {
+          "id": "m2l1",
+          "moduleId": "m2",
+          "title": "Constitution Overview",
+          "summary": "The Constitution of India was adopted on 26 Nov 1949 and came into force on 26 Jan 1950. Drafted by the Constituent Assembly with Dr. B.R. Ambedkar chairing the Drafting Committee.",
+          "script": "The Constituent Assembly, formed in 1946, took 2 years 11 months and 18 days to frame the Constitution. It was ADOPTED on 26 November 1949 (celebrated as Constitution Day / Samvidhan Divas) and came into FORCE on 26 January 1950 — chosen to commemorate the 1930 Purna Swaraj declaration.\n\nDr. B.R. Ambedkar chaired the Drafting Committee and is known as the 'Father of the Indian Constitution'. Dr. Rajendra Prasad was the President of the Constituent Assembly.\n\nThe Constitution borrowed selectively from many sources: Parliamentary system and rule of law from the UK; Fundamental Rights and judicial review from the USA; Directive Principles from Ireland; the federal scheme and emergency provisions influenced by the Government of India Act 1935 and other constitutions.\n\nThe Preamble declares India a SOVEREIGN, SOCIALIST, SECULAR, DEMOCRATIC REPUBLIC. The words 'Socialist', 'Secular', and 'Integrity' were added by the 42nd Amendment Act, 1976.",
+          "keyPoints": [
+            "Adopted 26 Nov 1949; came into force 26 Jan 1950.",
+            "Constituent Assembly took 2 years, 11 months, 18 days.",
+            "Dr. B.R. Ambedkar — Chairman, Drafting Committee.",
+            "Borrowed: Parliamentary system (UK), Fundamental Rights (USA), DPSP (Ireland).",
+            "'Socialist', 'Secular', 'Integrity' added by 42nd Amendment, 1976."
+          ],
+          "durationMinutes": 14,
+          "order": 1,
+          "freePreview": false,
+          "quiz": {
+            "id": "m2l1q",
+            "title": "Check: Constitution overview",
+            "passPercentage": 60,
+            "questions": [
+              {
+                "stem": "The Constitution of India came into force on:",
+                "options": ["26 November 1949", "15 August 1947", "26 January 1950", "26 January 1949"],
+                "correctIndex": 2,
+                "explanation": "It was adopted on 26 Nov 1949 but came into force on 26 Jan 1950, commemorating the 1930 Purna Swaraj declaration."
+              },
+              {
+                "stem": "The words 'Socialist' and 'Secular' were added to the Preamble by which amendment?",
+                "options": ["1st Amendment", "42nd Amendment", "44th Amendment", "73rd Amendment"],
+                "correctIndex": 1,
+                "explanation": "The 42nd Amendment Act, 1976 added 'Socialist', 'Secular', and 'Integrity' to the Preamble."
+              },
+              {
+                "stem": "The idea of Directive Principles of State Policy was borrowed from the constitution of:",
+                "options": ["USA", "UK", "Ireland", "Canada"],
+                "correctIndex": 2,
+                "explanation": "DPSP were inspired by the Irish Constitution, which had in turn borrowed from the Spanish Constitution."
+              }
+            ]
+          }
+        },
+        {
+          "id": "m2l2",
+          "moduleId": "m2",
+          "title": "Fundamental Rights",
+          "summary": "Part III, Articles 12-35. Six categories of rights, justiciable and enforceable through the Supreme Court (Art 32) and High Courts (Art 226).",
+          "script": "Fundamental Rights are contained in Part III (Articles 12-35) and are justiciable — citizens can move the courts directly to enforce them. There are six categories today:\n\n1. Right to Equality (Articles 14-18).\n2. Right to Freedom (Articles 19-22) — including the six freedoms under Article 19.\n3. Right against Exploitation (Articles 23-24).\n4. Right to Freedom of Religion (Articles 25-28).\n5. Cultural and Educational Rights (Articles 29-30).\n6. Right to Constitutional Remedies (Article 32) — which Dr. Ambedkar called the 'heart and soul' of the Constitution.\n\nThe Right to Property was originally a Fundamental Right but was removed by the 44th Amendment (1978) and made a legal right under Article 300A.\n\nArticle 32 lets the Supreme Court issue five writs: Habeas Corpus, Mandamus, Prohibition, Certiorari, and Quo-Warranto. High Courts have the same writ power under Article 226, which is actually wider.",
+          "keyPoints": [
+            "Part III, Articles 12-35; six categories of rights.",
+            "Article 32 — Right to Constitutional Remedies, the 'heart and soul'.",
+            "Five writs: Habeas Corpus, Mandamus, Prohibition, Certiorari, Quo-Warranto.",
+            "Right to Property removed as FR by 44th Amendment (1978); now Art 300A.",
+            "High Courts' writ jurisdiction (Art 226) is wider than the SC's (Art 32)."
+          ],
+          "durationMinutes": 15,
+          "order": 2,
+          "freePreview": false,
+          "quiz": {
+            "id": "m2l2q",
+            "title": "Check: Fundamental Rights",
+            "passPercentage": 60,
+            "questions": [
+              {
+                "stem": "Which article did Dr. Ambedkar describe as the 'heart and soul' of the Constitution?",
+                "options": ["Article 14", "Article 19", "Article 21", "Article 32"],
+                "correctIndex": 3,
+                "explanation": "Article 32, the Right to Constitutional Remedies, was called the heart and soul of the Constitution by Dr. Ambedkar."
+              },
+              {
+                "stem": "The Right to Property is currently a:",
+                "options": ["Fundamental Right", "Legal right under Article 300A", "Directive Principle", "Preambular value"],
+                "correctIndex": 1,
+                "explanation": "The 44th Amendment (1978) removed it from Fundamental Rights and made it a legal/constitutional right under Article 300A."
+              },
+              {
+                "stem": "Which of these is NOT one of the five writs issuable by the courts?",
+                "options": ["Habeas Corpus", "Mandamus", "Injunction", "Quo-Warranto"],
+                "correctIndex": 2,
+                "explanation": "The five writs are Habeas Corpus, Mandamus, Prohibition, Certiorari and Quo-Warranto. 'Injunction' is a civil remedy, not a constitutional writ."
+              }
+            ]
+          }
+        },
+        {
+          "id": "m2l3",
+          "moduleId": "m2",
+          "title": "Directive Principles of State Policy",
+          "summary": "Part IV, Articles 36-51. Non-justiciable guidelines for governance, classified as Socialist, Gandhian, and Liberal-Intellectual.",
+          "script": "Directive Principles of State Policy (DPSP) are in Part IV (Articles 36-51). Unlike Fundamental Rights, they are NON-JUSTICIABLE — you cannot go to court to enforce them — but they are 'fundamental in the governance of the country' (Article 37).\n\nThey are conventionally classified into three groups:\n- Socialist principles: e.g., Article 39 (adequate means of livelihood, equal pay), Article 41 (right to work, education), Article 43 (living wage).\n- Gandhian principles: e.g., Article 40 (organisation of village panchayats), Article 43 (cottage industries), Article 47 (prohibition of intoxicants), Article 48 (protection of cattle).\n- Liberal-Intellectual principles: e.g., Article 44 (Uniform Civil Code), Article 45 (early childhood care), Article 50 (separation of judiciary from executive), Article 51 (promotion of international peace).\n\nThe relationship between FRs and DPSPs has evolved through cases like Champakam Dorairajan, Golaknath, Kesavananda Bharati, and Minerva Mills, which together established that there must be balance and harmony between the two.",
+          "keyPoints": [
+            "Part IV, Articles 36-51; non-justiciable but fundamental to governance (Art 37).",
+            "Three groups: Socialist, Gandhian, Liberal-Intellectual.",
+            "Article 40 — village panchayats (Gandhian).",
+            "Article 44 — Uniform Civil Code (Liberal-Intellectual).",
+            "FR-DPSP balance shaped by Kesavananda Bharati and Minerva Mills."
+          ],
+          "durationMinutes": 13,
+          "order": 3,
+          "freePreview": false,
+          "quiz": {
+            "id": "m2l3q",
+            "title": "Check: DPSP",
+            "passPercentage": 60,
+            "questions": [
+              {
+                "stem": "Directive Principles of State Policy are:",
+                "options": ["Justiciable like Fundamental Rights", "Non-justiciable but fundamental to governance", "Enforceable only in High Courts", "Part of the Preamble"],
+                "correctIndex": 1,
+                "explanation": "Article 37 states DPSPs are not enforceable by courts but are fundamental in the governance of the country."
+              },
+              {
+                "stem": "Article 44, dealing with a Uniform Civil Code, falls under which category of DPSP?",
+                "options": ["Socialist", "Gandhian", "Liberal-Intellectual", "Economic"],
+                "correctIndex": 2,
+                "explanation": "The Uniform Civil Code (Art 44) is classified among the Liberal-Intellectual principles."
+              }
+            ]
+          }
+        },
+        {
+          "id": "m2l4",
+          "moduleId": "m2",
+          "title": "Union Government — Executive & Parliament",
+          "summary": "The President, PM and Council of Ministers, and Parliament (Lok Sabha + Rajya Sabha). Key articles and the law-making process.",
+          "script": "The Union Executive consists of the President, Vice-President, Prime Minister, and the Council of Ministers.\n\nThe President (Articles 52-62) is the nominal/constitutional head, elected indirectly by an electoral college. Real executive power rests with the Council of Ministers headed by the Prime Minister (Article 74 — the Council aids and advises the President, and that advice is binding).\n\nParliament (Article 79) = President + Lok Sabha (House of the People) + Rajya Sabha (Council of States). The Lok Sabha has a maximum strength of 552; the Rajya Sabha a maximum of 250 (238 elected + 12 nominated). Money Bills (Article 110) can be introduced only in the Lok Sabha and the Rajya Sabha has limited (14-day, recommendatory) power over them.\n\nA bill becomes law after passing both Houses and receiving Presidential assent. Disagreements between the Houses on ordinary bills may be resolved through a joint sitting (Article 108), summoned by the President and presided over by the Speaker.",
+          "keyPoints": [
+            "Union Executive: President, VP, PM, Council of Ministers.",
+            "Real power lies with the PM and Council (Article 74).",
+            "Parliament = President + Lok Sabha + Rajya Sabha (Article 79).",
+            "Lok Sabha max 552; Rajya Sabha max 250 (238 elected + 12 nominated).",
+            "Money Bills (Art 110) start only in Lok Sabha; joint sitting under Art 108."
+          ],
+          "durationMinutes": 16,
+          "order": 4,
+          "freePreview": false,
+          "quiz": {
+            "id": "m2l4q",
+            "title": "Check: Union Government",
+            "passPercentage": 60,
+            "questions": [
+              {
+                "stem": "A Money Bill under Article 110 can be introduced only in:",
+                "options": ["Rajya Sabha", "Lok Sabha", "Either House", "A joint sitting"],
+                "correctIndex": 1,
+                "explanation": "Money Bills can be introduced only in the Lok Sabha; the Rajya Sabha has limited, recommendatory powers over them."
+              },
+              {
+                "stem": "The maximum strength of the Rajya Sabha is:",
+                "options": ["238", "245", "250", "552"],
+                "correctIndex": 2,
+                "explanation": "The Constitution fixes the maximum Rajya Sabha strength at 250 (238 elected representatives of states/UTs + 12 nominated members)."
+              },
+              {
+                "stem": "A joint sitting of Parliament under Article 108 is presided over by:",
+                "options": ["The President", "The Vice-President", "The Speaker of Lok Sabha", "The Prime Minister"],
+                "correctIndex": 2,
+                "explanation": "Though summoned by the President, the joint sitting is presided over by the Speaker of the Lok Sabha."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "m3",
+      "title": "Module 3 — History",
+      "description": "Ancient, Medieval, Modern India and the freedom struggle — the high-yield anchors for Prelims.",
+      "order": 3,
+      "lessons": [
+        {
+          "id": "m3l1",
+          "moduleId": "m3",
+          "title": "Ancient India — Indus, Vedic, Maurya, Gupta",
+          "summary": "From the Harappan cities to the Gupta 'golden age' — urban planning, Vedic society, and the first great empires.",
+          "script": "The Indus Valley (Harappan) Civilisation (c. 2600-1900 BCE) was a Bronze Age urban culture famous for grid-planned cities (Mohenjo-daro, Harappa, Dholavira, Lothal), advanced drainage, standardised weights, and an undeciphered script. It was a largely peaceful, trade-based society.\n\nThe Vedic Period (c. 1500-600 BCE) gives us the four Vedas (Rigveda is the oldest). Early Vedic society was pastoral and relatively egalitarian; later Vedic society became agrarian and saw the hardening of the varna system.\n\nThe Mauryan Empire (321-185 BCE) was India's first large pan-Indian empire, founded by Chandragupta Maurya with Chanakya (Kautilya, author of the Arthashastra) as advisor. Ashoka (268-232 BCE) expanded it to its peak; after the Kalinga War he embraced Buddhism and propagated dhamma through rock and pillar edicts.\n\nThe Gupta Empire (c. 320-550 CE) is called the 'Golden Age' for achievements in mathematics (the decimal system and concept of zero), astronomy (Aryabhata), literature (Kalidasa), and art.",
+          "keyPoints": [
+            "Harappan cities: grid planning, drainage, undeciphered script (c. 2600-1900 BCE).",
+            "Rigveda is the oldest of the four Vedas.",
+            "Chandragupta Maurya founded the Mauryan Empire; Chanakya wrote the Arthashastra.",
+            "Ashoka embraced Buddhism after the Kalinga War; spread dhamma via edicts.",
+            "Gupta 'Golden Age': zero/decimals, Aryabhata, Kalidasa."
+          ],
+          "durationMinutes": 15,
+          "order": 1,
+          "freePreview": false,
+          "quiz": {
+            "id": "m3l1q",
+            "title": "Check: Ancient India",
+            "passPercentage": 60,
+            "questions": [
+              {
+                "stem": "The Arthashastra, a treatise on statecraft, was written by:",
+                "options": ["Ashoka", "Kautilya (Chanakya)", "Kalidasa", "Aryabhata"],
+                "correctIndex": 1,
+                "explanation": "Kautilya, also known as Chanakya, was Chandragupta Maurya's advisor and authored the Arthashastra."
+              },
+              {
+                "stem": "Ashoka embraced Buddhism after which event?",
+                "options": ["The Battle of Hydaspes", "The Kalinga War", "The Second Buddhist Council", "The fall of the Nandas"],
+                "correctIndex": 1,
+                "explanation": "The bloodshed of the Kalinga War (c. 261 BCE) led Ashoka to renounce war and embrace Buddhism."
+              },
+              {
+                "stem": "Which is the oldest of the four Vedas?",
+                "options": ["Samaveda", "Yajurveda", "Rigveda", "Atharvaveda"],
+                "correctIndex": 2,
+                "explanation": "The Rigveda is the oldest Veda, a collection of hymns from the early Vedic period."
+              }
+            ]
+          }
+        },
+        {
+          "id": "m3l2",
+          "moduleId": "m3",
+          "title": "Medieval India — Delhi Sultanate & Mughals",
+          "summary": "Five dynasties of the Delhi Sultanate, then the Mughal Empire's consolidation under Akbar and administrative systems.",
+          "script": "The Delhi Sultanate (1206-1526) comprised five successive dynasties: the Slave/Mamluk (Qutb-ud-din Aibak, who began the Qutb Minar), Khilji (Alauddin Khilji and his market/price-control reforms), Tughlaq (Muhammad bin Tughlaq's famous capital shift to Daulatabad and token currency), Sayyid, and Lodi (ended by Babur at the First Battle of Panipat, 1526).\n\nThe Mughal Empire (1526-1857) was founded by Babur. Akbar (1556-1605) consolidated and expanded it, introducing the Mansabdari system of ranked nobility, the Zabt/Dahsala land-revenue system (with Raja Todar Mal), and the policy of religious tolerance (Sulh-i-Kul, abolition of jizya). Later rulers Jahangir and Shah Jahan presided over a cultural peak (Taj Mahal), while Aurangzeb's long reign saw maximum territorial extent but also strains that hastened decline.",
+          "keyPoints": [
+            "Delhi Sultanate: Slave, Khilji, Tughlaq, Sayyid, Lodi dynasties (1206-1526).",
+            "Alauddin Khilji introduced market/price-control reforms.",
+            "First Battle of Panipat (1526): Babur defeated Ibrahim Lodi, founding the Mughals.",
+            "Akbar's Mansabdari system and Zabt revenue system (with Todar Mal).",
+            "Akbar's Sulh-i-Kul and abolition of jizya reflected religious tolerance."
+          ],
+          "durationMinutes": 15,
+          "order": 2,
+          "freePreview": false,
+          "quiz": {
+            "id": "m3l2q",
+            "title": "Check: Medieval India",
+            "passPercentage": 60,
+            "questions": [
+              {
+                "stem": "The First Battle of Panipat (1526) was fought between Babur and:",
+                "options": ["Rana Sanga", "Ibrahim Lodi", "Hemu", "Sher Shah Suri"],
+                "correctIndex": 1,
+                "explanation": "Babur defeated Ibrahim Lodi at the First Battle of Panipat in 1526, founding the Mughal Empire."
+              },
+              {
+                "stem": "The Mansabdari system of ranked nobility was institutionalised by:",
+                "options": ["Babur", "Akbar", "Aurangzeb", "Shah Jahan"],
+                "correctIndex": 1,
+                "explanation": "Akbar systematised the Mansabdari system, assigning ranks (mansabs) to nobles based on zat and sawar."
+              }
+            ]
+          }
+        },
+        {
+          "id": "m3l3",
+          "moduleId": "m3",
+          "title": "Modern India & the Freedom Struggle",
+          "summary": "From the 1857 revolt and Crown rule to the INC, Gandhian mass movements, and Independence in 1947.",
+          "script": "The Revolt of 1857 (the First War of Independence) ended Company rule; the Government of India Act 1858 transferred power to the British Crown. The Indian National Congress was founded in 1885 (A.O. Hume).\n\nThe freedom struggle moved through phases: Moderates (petitions, 1885-1905), Extremists (Lal-Bal-Pal, Swadeshi after the 1905 Bengal Partition), and the Gandhian era of mass mobilisation. Key Gandhian movements: Non-Cooperation (1920-22, called off after Chauri Chaura), Civil Disobedience (1930, launched with the Dandi Salt March), and Quit India (1942, 'Do or Die').\n\nLandmark constitutional milestones include the Morley-Minto Reforms (1909, separate electorates), Montagu-Chelmsford Reforms (1919), and the Government of India Act 1935 (provincial autonomy). India gained independence on 15 August 1947 following the Mountbatten Plan and the Indian Independence Act 1947.",
+          "keyPoints": [
+            "GoI Act 1858 transferred power from the Company to the Crown.",
+            "INC founded in 1885 (A.O. Hume).",
+            "Non-Cooperation called off after the Chauri Chaura incident (1922).",
+            "Civil Disobedience began with the Dandi Salt March (1930).",
+            "Quit India Movement launched in 1942 with the slogan 'Do or Die'."
+          ],
+          "durationMinutes": 16,
+          "order": 3,
+          "freePreview": false,
+          "quiz": {
+            "id": "m3l3q",
+            "title": "Check: Freedom struggle",
+            "passPercentage": 60,
+            "questions": [
+              {
+                "stem": "The Non-Cooperation Movement was called off by Gandhi after which incident?",
+                "options": ["Jallianwala Bagh", "Chauri Chaura", "Dandi March", "Quit India"],
+                "correctIndex": 1,
+                "explanation": "The violence at Chauri Chaura in 1922, where a police station was burnt, led Gandhi to suspend the Non-Cooperation Movement."
+              },
+              {
+                "stem": "The Civil Disobedience Movement was launched in 1930 with the:",
+                "options": ["Champaran Satyagraha", "Dandi Salt March", "Khilafat agitation", "Cabinet Mission"],
+                "correctIndex": 1,
+                "explanation": "Gandhi launched Civil Disobedience with the Dandi Salt March, defying the colonial salt monopoly."
+              },
+              {
+                "stem": "Power was transferred from the East India Company to the British Crown by the:",
+                "options": ["Regulating Act 1773", "Government of India Act 1858", "Indian Councils Act 1861", "Government of India Act 1935"],
+                "correctIndex": 1,
+                "explanation": "Following the 1857 revolt, the Government of India Act 1858 ended Company rule and placed India under the Crown."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "m4",
+      "title": "Module 4 — Geography",
+      "description": "Physical, Indian, and economic geography — the conceptual backbone for environment and current affairs too.",
+      "order": 4,
+      "lessons": [
+        {
+          "id": "m4l1",
+          "moduleId": "m4",
+          "title": "Physical Geography — Landforms & Climate",
+          "summary": "The Earth's interior, plate tectonics, the rock cycle, and the forces that build mountains and drive climate.",
+          "script": "The Earth has three concentric layers: the crust, the mantle, and the core (outer liquid, inner solid). Plate Tectonics theory explains that the lithosphere is broken into plates moving over the asthenosphere; their boundaries (convergent, divergent, transform) cause earthquakes, volcanoes, and mountain-building (orogeny).\n\nRocks are of three types: igneous (cooled magma/lava), sedimentary (compacted sediments — the only type with fossils), and metamorphic (heat/pressure-altered). The rock cycle connects all three.\n\nClimate is driven by latitude, altitude, distance from the sea, ocean currents, and atmospheric circulation. The atmosphere is layered: troposphere (weather), stratosphere (ozone layer), mesosphere, thermosphere, exosphere. Insolation, the Coriolis effect, and pressure belts together shape global wind systems and monsoons.",
+          "keyPoints": [
+            "Earth's layers: crust, mantle, core (outer liquid + inner solid).",
+            "Plate boundaries: convergent, divergent, transform — cause quakes/volcanoes.",
+            "Three rock types: igneous, sedimentary (has fossils), metamorphic.",
+            "Atmospheric layers: troposphere, stratosphere (ozone), mesosphere, thermosphere.",
+            "Climate controls: latitude, altitude, sea distance, currents, circulation."
+          ],
+          "durationMinutes": 15,
+          "order": 1,
+          "freePreview": false,
+          "quiz": {
+            "id": "m4l1q",
+            "title": "Check: Physical geography",
+            "passPercentage": 60,
+            "questions": [
+              {
+                "stem": "Fossils are typically found in which type of rock?",
+                "options": ["Igneous", "Sedimentary", "Metamorphic", "Volcanic"],
+                "correctIndex": 1,
+                "explanation": "Sedimentary rocks form by deposition of sediments and are the only rock type that commonly preserves fossils."
+              },
+              {
+                "stem": "The ozone layer that absorbs ultraviolet radiation lies in the:",
+                "options": ["Troposphere", "Stratosphere", "Mesosphere", "Thermosphere"],
+                "correctIndex": 1,
+                "explanation": "The ozone layer is concentrated in the stratosphere, the second atmospheric layer."
+              }
+            ]
+          }
+        },
+        {
+          "id": "m4l2",
+          "moduleId": "m4",
+          "title": "Indian Geography — Relief & Rivers",
+          "summary": "India's physiographic divisions, the Himalayan and Peninsular river systems, and the monsoon.",
+          "script": "India's physiography has six divisions: the Northern Himalayas, the Northern (Indo-Gangetic) Plains, the Peninsular Plateau, the Indian Desert (Thar), the Coastal Plains, and the Islands.\n\nRivers fall into two systems. Himalayan rivers (Indus, Ganga, Brahmaputra) are perennial, snow- and rain-fed, and form large fertile plains and deltas. Peninsular rivers (Godavari — the 'Dakshin Ganga' and largest peninsular river, Krishna, Kaveri, Mahanadi) are mostly seasonal and rain-fed; the Narmada and Tapi are notable west-flowing rivers draining into the Arabian Sea through rift valleys.\n\nThe Indian Monsoon dominates the climate. The Southwest Monsoon (June-September) brings the bulk of annual rainfall as moist winds move from sea to the heated landmass; the Northeast (retreating) Monsoon (October-December) brings rain to the southeast coast, especially Tamil Nadu.",
+          "keyPoints": [
+            "Six physiographic divisions including Himalayas, Plains, Peninsular Plateau.",
+            "Himalayan rivers (Indus, Ganga, Brahmaputra) are perennial.",
+            "Godavari is the largest peninsular river ('Dakshin Ganga').",
+            "Narmada and Tapi flow west into the Arabian Sea via rift valleys.",
+            "Southwest Monsoon (Jun-Sep) gives most of India's rainfall."
+          ],
+          "durationMinutes": 14,
+          "order": 2,
+          "freePreview": false,
+          "quiz": {
+            "id": "m4l2q",
+            "title": "Check: Indian geography",
+            "passPercentage": 60,
+            "questions": [
+              {
+                "stem": "Which is the largest peninsular river, often called the 'Dakshin Ganga'?",
+                "options": ["Krishna", "Kaveri", "Godavari", "Mahanadi"],
+                "correctIndex": 2,
+                "explanation": "The Godavari is the largest river of peninsular India and is nicknamed the 'Dakshin Ganga' (Ganga of the South)."
+              },
+              {
+                "stem": "The Narmada and Tapi rivers are notable because they:",
+                "options": ["Are Himalayan rivers", "Flow westward into the Arabian Sea", "Form the largest delta", "Are entirely snow-fed"],
+                "correctIndex": 1,
+                "explanation": "Unlike most peninsular rivers, the Narmada and Tapi flow west through rift valleys into the Arabian Sea."
+              }
+            ]
+          }
+        },
+        {
+          "id": "m4l3",
+          "moduleId": "m4",
+          "title": "Economic Geography & Resources",
+          "summary": "Distribution of minerals, energy, agriculture and industry — linking physical geography to the economy.",
+          "script": "Economic geography studies how natural resources and human activity are distributed. India's mineral belt is concentrated in the northeastern peninsular plateau (Jharkhand, Odisha, Chhattisgarh) — rich in coal (Gondwana coalfields like Jharia, Raniganj), iron ore, bauxite, and manganese.\n\nEnergy resources span conventional (coal — the dominant source, petroleum, natural gas) and renewables (solar, wind, hydro). India has been rapidly expanding solar capacity and hosts the International Solar Alliance.\n\nAgriculture depends on soil and climate: alluvial soils of the plains support wheat and rice; black (regur) soil of the Deccan is ideal for cotton; red and laterite soils support coarse grains and plantation crops. Cropping seasons are Kharif (monsoon-sown), Rabi (winter), and Zaid (summer). Industrial location is shaped by raw materials, power, transport, markets, and labour — explaining clusters like the Mumbai-Pune and Chotanagpur belts.",
+          "keyPoints": [
+            "Mineral wealth concentrated in Jharkhand-Odisha-Chhattisgarh plateau.",
+            "Coal is India's dominant energy source; Gondwana coalfields (Jharia, Raniganj).",
+            "Black (regur) soil suits cotton; alluvial soils suit wheat and rice.",
+            "Cropping seasons: Kharif, Rabi, Zaid.",
+            "India hosts the International Solar Alliance."
+          ],
+          "durationMinutes": 13,
+          "order": 3,
+          "freePreview": false,
+          "quiz": {
+            "id": "m4l3q",
+            "title": "Check: Economic geography",
+            "passPercentage": 60,
+            "questions": [
+              {
+                "stem": "Black (regur) soil is especially suited for the cultivation of:",
+                "options": ["Rice", "Cotton", "Tea", "Wheat"],
+                "correctIndex": 1,
+                "explanation": "Black or regur soil, common in the Deccan trap region, retains moisture well and is ideal for cotton."
+              },
+              {
+                "stem": "Kharif crops are sown in which season?",
+                "options": ["Winter", "Summer", "With the onset of the monsoon", "Post-harvest"],
+                "correctIndex": 2,
+                "explanation": "Kharif crops (e.g., rice, maize, cotton) are sown at the start of the southwest monsoon and harvested in autumn."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "m5",
+      "title": "Module 5 — Economy",
+      "description": "Core economic concepts, the Indian economy, and the institutions that run monetary and fiscal policy.",
+      "order": 5,
+      "lessons": [
+        {
+          "id": "m5l1",
+          "moduleId": "m5",
+          "title": "Basic Economic Concepts",
+          "summary": "GDP vs GNP, nominal vs real, inflation, and the sectors of the economy.",
+          "script": "Gross Domestic Product (GDP) is the value of all final goods and services produced WITHIN a country's borders in a year. Gross National Product (GNP) adds net factor income from abroad. 'Nominal' GDP is at current prices; 'Real' GDP is adjusted for inflation using a base year, so it reflects actual growth.\n\nThe economy is divided into three sectors: Primary (agriculture, mining), Secondary (manufacturing, industry), and Tertiary (services). India is unusual in that services contribute the largest share of GDP while agriculture still employs the largest share of the workforce.\n\nInflation is a sustained rise in the general price level. It is measured in India primarily by the Consumer Price Index (CPI) — now the RBI's headline target — and the Wholesale Price Index (WPI). Moderate inflation is normal; the RBI targets CPI inflation of 4% (+/- 2%) under its flexible inflation-targeting framework.",
+          "keyPoints": [
+            "GDP = output within borders; GNP = GDP + net factor income from abroad.",
+            "Real GDP is inflation-adjusted; nominal GDP is at current prices.",
+            "Three sectors: Primary, Secondary, Tertiary.",
+            "Services lead India's GDP; agriculture leads employment.",
+            "RBI targets CPI inflation at 4% (+/- 2%)."
+          ],
+          "durationMinutes": 14,
+          "order": 1,
+          "freePreview": false,
+          "quiz": {
+            "id": "m5l1q",
+            "title": "Check: Economic concepts",
+            "passPercentage": 60,
+            "questions": [
+              {
+                "stem": "Which index is the RBI's headline target for inflation?",
+                "options": ["Wholesale Price Index (WPI)", "Consumer Price Index (CPI)", "GDP Deflator", "Producer Price Index"],
+                "correctIndex": 1,
+                "explanation": "Under flexible inflation targeting, the RBI targets CPI inflation at 4% with a tolerance band of +/- 2%."
+              },
+              {
+                "stem": "Real GDP differs from nominal GDP in that real GDP is:",
+                "options": ["Measured at current prices", "Adjusted for inflation", "Inclusive of foreign income", "Always larger"],
+                "correctIndex": 1,
+                "explanation": "Real GDP is calculated using base-year (constant) prices, removing the effect of inflation to show true output growth."
+              }
+            ]
+          }
+        },
+        {
+          "id": "m5l2",
+          "moduleId": "m5",
+          "title": "Indian Economy — Money, Banking & Policy",
+          "summary": "The RBI, monetary policy tools, fiscal policy, and key institutions governing the Indian economy.",
+          "script": "The Reserve Bank of India (RBI), established in 1935, is the central bank. It conducts MONETARY POLICY to manage inflation and liquidity using tools such as the Repo Rate (rate at which RBI lends to banks), Reverse Repo, Cash Reserve Ratio (CRR), and Statutory Liquidity Ratio (SLR). Monetary policy decisions are taken by the six-member Monetary Policy Committee (MPC).\n\nFISCAL POLICY — taxation and government spending — is the domain of the government, presented annually in the Union Budget. The Fiscal Responsibility and Budget Management (FRBM) Act guides deficit targets. Key concepts include the fiscal deficit (total borrowing requirement) and revenue deficit.\n\nTaxes are direct (income tax, corporate tax) or indirect (GST). The Goods and Services Tax (GST), launched in 2017, is a destination-based indirect tax administered through the GST Council — a key example of cooperative federalism. Planning shifted from the Planning Commission (Five-Year Plans) to the NITI Aayog (a think-tank) in 2015.",
+          "keyPoints": [
+            "RBI (est. 1935) conducts monetary policy via repo rate, CRR, SLR.",
+            "The six-member MPC sets the policy rate.",
+            "Fiscal policy = taxation + spending, via the Union Budget; guided by FRBM Act.",
+            "GST (2017) is a destination-based indirect tax run by the GST Council.",
+            "NITI Aayog replaced the Planning Commission in 2015."
+          ],
+          "durationMinutes": 16,
+          "order": 2,
+          "freePreview": false,
+          "quiz": {
+            "id": "m5l2q",
+            "title": "Check: Indian economy",
+            "passPercentage": 60,
+            "questions": [
+              {
+                "stem": "The repo rate in India is decided by the:",
+                "options": ["Union Cabinet", "Monetary Policy Committee (MPC)", "Finance Commission", "SEBI"],
+                "correctIndex": 1,
+                "explanation": "The six-member Monetary Policy Committee, set up under the RBI Act, decides the policy repo rate."
+              },
+              {
+                "stem": "The body that replaced the Planning Commission in 2015 is the:",
+                "options": ["Finance Commission", "NITI Aayog", "GST Council", "Economic Advisory Council"],
+                "correctIndex": 1,
+                "explanation": "The NITI Aayog (National Institution for Transforming India), a policy think-tank, replaced the Planning Commission in 2015."
+              },
+              {
+                "stem": "GST is best described as a:",
+                "options": ["Direct tax on income", "Origin-based tax", "Destination-based indirect tax", "Tax only on services"],
+                "correctIndex": 2,
+                "explanation": "GST, introduced in 2017, is a comprehensive destination-based indirect tax on the supply of goods and services."
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

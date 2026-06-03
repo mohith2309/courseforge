@@ -1,0 +1,29 @@
+# ── Secrets (NEVER commit) ───────────────────────────────
+.env
+*.env
+!*.env.example
+server/.env
+
+# ── Server file-store / runtime data ─────────────────────
+server/data/
+node_modules/
+
+# ── Flutter / Dart build artifacts ───────────────────────
+flutter_app/build/
+flutter_app/.dart_tool/
+flutter_app/.flutter-plugins
+flutter_app/.flutter-plugins-dependencies
+flutter_app/.gradle/
+flutter_app/android/.gradle/
+flutter_app/android/app/build/
+flutter_app/ios/Pods/
+flutter_app/ios/.symlinks/
+*.apk
+*.aab
+*.ipa
+
+# ── OS / editor ──────────────────────────────────────────
+.DS_Store
+*.log
+.idea/
+.vscode/

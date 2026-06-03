@@ -1,0 +1,199 @@
+{
+  "creators": [
+    {
+      "id": "creator-ias",
+      "name": "Ananya Verma",
+      "bio": "UPSC aspirant (Mains qualified, 2024). Teaches Polity and Modern History with an exam-first, NCERT-grounded approach.",
+      "avatarEmoji": "👩‍🏫"
+    },
+    {
+      "id": "creator-phil",
+      "name": "Dr. R. Krishnan",
+      "bio": "PhD in Philosophy, 12 years teaching ethics and Indian philosophy to civil-services optional students.",
+      "avatarEmoji": "🧔‍♂️"
+    },
+    {
+      "id": "creator-geo",
+      "name": "Meera Nair",
+      "bio": "Geography optional mentor and former school faculty. Loves maps, monsoons, and clear diagrams.",
+      "avatarEmoji": "👩‍🔬"
+    },
+    {
+      "id": "creator-eng",
+      "name": "Sahil Khanna",
+      "bio": "Communication coach helping aspirants and professionals speak and write with clarity.",
+      "avatarEmoji": "🧑‍💼"
+    }
+  ],
+  "courses": [
+    {
+      "id": "philosophy-optional",
+      "title": "Philosophy Optional — Foundations",
+      "subtitle": "Western & Indian philosophy for the UPSC optional paper",
+      "description": "A structured walk through the major schools of Western and Indian philosophy, built for candidates choosing Philosophy as their Mains optional. Concept-first, with answer-writing frameworks.",
+      "category": "Optional Subject",
+      "tags": ["UPSC", "Philosophy", "Optional", "Ethics"],
+      "creatorId": "creator-phil",
+      "priceInr": 1499,
+      "thumbnailEmoji": "📜",
+      "rating": 4.6,
+      "reviewCount": 138,
+      "enrollmentsCount": 980,
+      "featured": true,
+      "modules": [
+        {
+          "id": "p-m1",
+          "title": "Module 1 — Greek Beginnings",
+          "description": "From the Pre-Socratics to Aristotle.",
+          "order": 1,
+          "lessons": [
+            {
+              "id": "p-m1l1",
+              "moduleId": "p-m1",
+              "title": "Plato & Aristotle",
+              "summary": "The theory of Forms, the allegory of the cave, and Aristotle's critique and empiricism.",
+              "script": "Plato held that the changing physical world is a shadow of a higher realm of unchanging Forms (Ideas). True knowledge is recollection of these Forms. The Allegory of the Cave dramatises the philosopher's ascent from illusion to the Form of the Good.\n\nAristotle, Plato's pupil, rejected a separate realm of Forms. For him, form and matter are united in things (hylomorphism). He grounded knowledge in observation and built systematic logic (the syllogism), ethics (the doctrine of the mean), and metaphysics (the four causes). This Plato-Aristotle contrast — rationalist idealism vs empirical realism — is a recurring theme in the whole subject.",
+              "keyPoints": [
+                "Plato: world of Forms; knowledge as recollection.",
+                "Allegory of the Cave depicts ascent to the Form of the Good.",
+                "Aristotle: form and matter united (hylomorphism).",
+                "Aristotle founded formal logic (the syllogism).",
+                "Core contrast: rationalist idealism vs empirical realism."
+              ],
+              "durationMinutes": 14,
+              "order": 1,
+              "freePreview": true,
+              "quiz": {
+                "id": "p-m1l1q",
+                "title": "Check: Plato & Aristotle",
+                "passPercentage": 60,
+                "questions": [
+                  {
+                    "stem": "The Allegory of the Cave is associated with:",
+                    "options": ["Aristotle", "Plato", "Socrates' trial", "Thales"],
+                    "correctIndex": 1,
+                    "explanation": "The Allegory of the Cave appears in Plato's Republic and illustrates the ascent from illusion to knowledge of the Forms."
+                  },
+                  {
+                    "stem": "Aristotle's view that form and matter are united in a substance is called:",
+                    "options": ["Dualism", "Hylomorphism", "Idealism", "Nominalism"],
+                    "correctIndex": 1,
+                    "explanation": "Hylomorphism (from hyle, matter, and morphe, form) is Aristotle's doctrine that substances are compounds of matter and form."
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "world-geography",
+      "title": "World Geography Crash Course",
+      "subtitle": "Climatology, oceanography & maps for GS and optional",
+      "description": "Fast, visual coverage of physical and world geography with map-based revision. Great as a supplement to the IAS foundation course.",
+      "category": "Exam Prep",
+      "tags": ["UPSC", "Geography", "Maps", "Climate"],
+      "creatorId": "creator-geo",
+      "priceInr": 599,
+      "thumbnailEmoji": "🗺️",
+      "rating": 4.7,
+      "reviewCount": 205,
+      "enrollmentsCount": 1640,
+      "featured": false,
+      "modules": [
+        {
+          "id": "g-m1",
+          "title": "Module 1 — Climatology",
+          "description": "Atmosphere, pressure belts, and winds.",
+          "order": 1,
+          "lessons": [
+            {
+              "id": "g-m1l1",
+              "moduleId": "g-m1",
+              "title": "Pressure Belts & Global Winds",
+              "summary": "Seven pressure belts, the Coriolis effect, and the planetary wind system.",
+              "script": "Differential heating of the Earth creates seven alternating pressure belts: the Equatorial Low, two Subtropical Highs, two Subpolar Lows, and two Polar Highs. Air moves from high to low pressure, but the Coriolis effect (due to the Earth's rotation) deflects it — to the right in the Northern Hemisphere and to the left in the Southern.\n\nThis produces the three planetary wind systems: the Trade Winds (subtropical high to equatorial low), the Westerlies (subtropical high to subpolar low), and the Polar Easterlies. Seasonal shifts of these belts with the apparent movement of the Sun help drive monsoons.",
+              "keyPoints": [
+                "Seven pressure belts, alternating high and low.",
+                "Coriolis effect deflects winds right (N) / left (S).",
+                "Three wind systems: Trades, Westerlies, Polar Easterlies.",
+                "Belt shifts with the Sun drive seasonal monsoons."
+              ],
+              "durationMinutes": 12,
+              "order": 1,
+              "freePreview": true,
+              "quiz": {
+                "id": "g-m1l1q",
+                "title": "Check: Winds",
+                "passPercentage": 60,
+                "questions": [
+                  {
+                    "stem": "In the Northern Hemisphere, the Coriolis effect deflects moving air to the:",
+                    "options": ["Left", "Right", "Equator", "Poles"],
+                    "correctIndex": 1,
+                    "explanation": "Due to the Earth's rotation, the Coriolis effect deflects winds to the right in the Northern Hemisphere."
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "english-communication",
+      "title": "Spoken English & Interview Confidence",
+      "subtitle": "Speak clearly for interviews, GDs, and the UPSC personality test",
+      "description": "A practical communication course covering structure, fluency, body language, and answering with clarity under pressure.",
+      "category": "Communication",
+      "tags": ["English", "Interview", "Communication", "Soft Skills"],
+      "creatorId": "creator-eng",
+      "priceInr": 999,
+      "thumbnailEmoji": "🎤",
+      "rating": 4.5,
+      "reviewCount": 312,
+      "enrollmentsCount": 2890,
+      "featured": false,
+      "modules": [
+        {
+          "id": "e-m1",
+          "title": "Module 1 — Speaking with Structure",
+          "description": "Frameworks that make any answer sound organised.",
+          "order": 1,
+          "lessons": [
+            {
+              "id": "e-m1l1",
+              "moduleId": "e-m1",
+              "title": "The PREP Framework",
+              "summary": "Point, Reason, Example, Point — a simple structure for clear spoken answers.",
+              "script": "Under pressure, most people ramble. The PREP framework keeps you organised: state your POINT first, give a REASON, support it with an EXAMPLE, then restate the POINT. In an interview, this turns a vague answer into a tight 30-45 second response.\n\nPractise by taking any opinion question ('Should cities ban private cars in the centre?') and answering in PREP order out loud. The discipline of leading with your point — rather than thinking aloud — is what makes you sound confident and decisive.",
+              "keyPoints": [
+                "PREP = Point, Reason, Example, Point.",
+                "Lead with the point; don't think aloud.",
+                "Aim for tight 30-45 second answers.",
+                "Practise on opinion questions out loud."
+              ],
+              "durationMinutes": 10,
+              "order": 1,
+              "freePreview": true,
+              "quiz": {
+                "id": "e-m1l1q",
+                "title": "Check: PREP",
+                "passPercentage": 60,
+                "questions": [
+                  {
+                    "stem": "In the PREP framework, what comes immediately after stating your Point?",
+                    "options": ["Another point", "A reason", "A summary", "A question"],
+                    "correctIndex": 1,
+                    "explanation": "PREP stands for Point, Reason, Example, Point — the Reason directly supports your opening point."
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
