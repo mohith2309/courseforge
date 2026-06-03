@@ -48,7 +48,7 @@ const COMMISSION = 0.3;
 const MAX_BODY = 512 * 1024; // 512 KB
 
 // ── HTTPS JSON helper ────────────────────────────────────────────────────────
-function httpsJson(url, { method = 'POST', headers = {}, body } = {}) {
+function httpsJson(url, { method = 'POST', headers = {}, body, timeoutMs = 45000 } = {}) {
   return new Promise((resolve, reject) => {
     const data = body !== undefined && body !== null ? JSON.stringify(body) : null;
     const req = https.request(new URL(url), {
@@ -67,6 +67,8 @@ function httpsJson(url, { method = 'POST', headers = {}, body } = {}) {
       });
     });
     req.on('error', reject);
+    // Hard timeout: never let a hung upstream (Gemini/NIM) block the request forever.
+    req.setTimeout(timeoutMs, () => req.destroy(new Error('upstream timeout')));
     if (data) req.write(data);
     req.end();
   });
@@ -131,27 +133,27 @@ async function save(name, value) {
 }
 
 // ── AI providers ─────────────────────────────────────────────────────────────
-async function gemini(prompt, { json = false, grounding = false } = {}) {
+async function gemini(prompt, { json = false, grounding = false, maxTokens = 24000, retries = 3, timeoutMs = 50000 } = {}) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_KEY}`;
   const reqBody = { contents: [{ parts: [{ text: prompt }] }] };
-  reqBody.generationConfig = { thinkingConfig: { thinkingBudget: 0 }, maxOutputTokens: 24000 };
+  reqBody.generationConfig = { thinkingConfig: { thinkingBudget: 0 }, maxOutputTokens: maxTokens };
   if (json) reqBody.generationConfig.responseMimeType = 'application/json';
   if (grounding) reqBody.tools = [{ google_search: {} }];
   let lastErr;
-  for (let a = 0; a < 5; a++) {
+  for (let a = 0; a < retries; a++) {
     try {
-      const { status, body } = await httpsJson(url, { body: reqBody });
+      const { status, body } = await httpsJson(url, { body: reqBody, timeoutMs });
       if (status === 200) { const t = body?.candidates?.[0]?.content?.parts?.[0]?.text; if (t) return t; throw new Error('empty'); }
       lastErr = new Error(`Gemini ${status}`); if (status < 500) break;
     } catch (e) { lastErr = e; }
-    if (a < 4) await new Promise((r) => setTimeout(r, 1500 * (a + 1)));
+    if (a < retries - 1) await new Promise((r) => setTimeout(r, 1500 * (a + 1)));
   }
   throw lastErr;
 }
-async function nim(prompt, { maxTokens = 900, temperature = 0.4, model = NIM_MODEL, json = false } = {}) {
+async function nim(prompt, { maxTokens = 900, temperature = 0.4, model = NIM_MODEL, json = false, timeoutMs = 45000 } = {}) {
   const reqBody = { model, messages: [{ role: 'user', content: prompt }], max_tokens: maxTokens, temperature };
   if (json) reqBody.response_format = { type: 'json_object' };
-  const { status, body } = await httpsJson(`${NIM_BASE}/chat/completions`, { headers: { Authorization: `Bearer ${NIM_KEY}` }, body: reqBody });
+  const { status, body } = await httpsJson(`${NIM_BASE}/chat/completions`, { headers: { Authorization: `Bearer ${NIM_KEY}` }, body: reqBody, timeoutMs });
   if (status !== 200) throw new Error(`NIM ${status}`);
   return body.choices[0].message.content;
 }
@@ -329,9 +331,11 @@ const server = http.createServer(async (req, res) => {
       if (p === '/ai/lesson') {
         const pr = lessonPrompt(String(body.courseTitle || '').slice(0, 200), String(body.moduleTitle || '').slice(0, 200), String(body.lessonTitle || '').slice(0, 200), String(body.summary || '').slice(0, 500));
         if (GROQ_LIVE) { try { return send(res, req, 200, parseLooseJson(await groq(pr, { json: true, maxTokens: 2400 }))); } catch {} }
-        try { return send(res, req, 200, parseLooseJson(await gemini(pr, { json: true }))); }
+        // Fast path: Gemini (single bounded attempt). Fallback: one 70B NIM attempt.
+        // Worst case ~100s, comfortably under the app's 120s wait — never an infinite spinner.
+        try { return send(res, req, 200, parseLooseJson(await gemini(pr, { json: true, maxTokens: 8000, retries: 1, timeoutMs: 50000 }))); }
         catch {
-          for (let i = 0; i < 2; i++) { try { return send(res, req, 200, parseLooseJson(await nim(pr, { model: LESSON_MODEL, maxTokens: 2400, temperature: 0.7, json: true }))); } catch {} }
+          try { return send(res, req, 200, parseLooseJson(await nim(pr, { model: LESSON_MODEL, maxTokens: 2400, temperature: 0.7, json: true, timeoutMs: 50000 }))); } catch {}
           return send(res, req, 503, { error: 'could not generate lesson' });
         }
       }
