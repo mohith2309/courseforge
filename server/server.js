@@ -350,7 +350,7 @@ const server = http.createServer(async (req, res) => {
         out.github = GH_LIVE ? await probe(() => ghModels(pr, { json: true, maxTokens: 2400, timeoutMs: 20000 })) : 'off';
         return send(res, req, 200, out);
       }
-      if (!rateLimit(`ai:${ip}`, 12, 60000)) return send(res, req, 429, { error: 'AI rate limit — slow down' });
+      if (!rateLimit(`ai:${ip}`, 30, 60000)) return send(res, req, 429, { error: 'AI rate limit — slow down' });
       const body = await readBody(req);
       if (body.__big) return send(res, req, 413, { error: 'payload too large' });
 
