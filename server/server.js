@@ -319,25 +319,22 @@ const server = http.createServer(async (req, res) => {
       if (p === '/ai/generate-course') {
         const goal = String(body.goal || '').slice(0, 2000);
         if (!goal) return send(res, req, 400, { error: 'goal required' });
+        // Groq 70B (primary) → NVIDIA 70B (quality) → NVIDIA 8B (fast). Gemini omitted (0 quota).
         if (GROQ_LIVE) { try { return send(res, req, 200, parseLooseJson(await groq(coursePrompt(goal), { json: true, maxTokens: 8000 }))); } catch {} }
-        try { return send(res, req, 200, JSON.parse(await gemini(coursePrompt(goal), { json: true }))); }
-        catch (e) {
-          try {
-            const raw = await nim(`Create a study course for: "${goal}". Return ONLY JSON {"title":"","subtitle":"","description":"","category":"General","tags":[],"thumbnailEmoji":"📘","modules":[{"title":"","description":"","lessons":[{"title":"","summary":"","script":"100-150 word lesson","keyPoints":["3-4 short bullets"],"durationMinutes":8,"quiz":{"questions":[{"stem":"","options":["","","",""],"correctIndex":0,"explanation":""}]}}]}]}. Exactly 4 modules, 2 lessons each, 3 questions each, scripts under 130 words.`, { maxTokens: 6000, temperature: 0.5, json: true });
-            return send(res, req, 200, parseLooseJson(raw));
-          } catch { return send(res, req, 503, { error: 'AI busy — try again' }); }
-        }
+        const nimCoursePrompt = `Create a study course for: "${goal}". Return ONLY JSON {"title":"","subtitle":"","description":"","category":"General","tags":[],"thumbnailEmoji":"📘","modules":[{"title":"","description":"","lessons":[{"title":"","summary":"","script":"100-150 word lesson","keyPoints":["3-4 short bullets"],"durationMinutes":8,"quiz":{"questions":[{"stem":"","options":["","","",""],"correctIndex":0,"explanation":""}]}}]}]}. Exactly 4 modules, 2 lessons each, 3 questions each, scripts under 130 words.`;
+        try { return send(res, req, 200, parseLooseJson(await nim(nimCoursePrompt, { model: LESSON_MODEL, maxTokens: 6000, temperature: 0.5, json: true, timeoutMs: 55000 }))); } catch {}
+        try { return send(res, req, 200, parseLooseJson(await nim(nimCoursePrompt, { maxTokens: 5000, temperature: 0.5, json: true, timeoutMs: 40000 }))); } catch {}
+        return send(res, req, 503, { error: 'AI busy — try again' });
       }
       if (p === '/ai/lesson') {
         const pr = lessonPrompt(String(body.courseTitle || '').slice(0, 200), String(body.moduleTitle || '').slice(0, 200), String(body.lessonTitle || '').slice(0, 200), String(body.summary || '').slice(0, 500));
+        // Provider chain, each bounded so the screen never hangs:
+        // Groq 70B (~1s, primary) → NVIDIA 70B (quality) → NVIDIA 8B (fast safety net).
+        // (Gemini is omitted — its key has 0 free-tier quota and only errors.)
         if (GROQ_LIVE) { try { return send(res, req, 200, parseLooseJson(await groq(pr, { json: true, maxTokens: 2400 }))); } catch {} }
-        // Fast path: Gemini (single bounded attempt). Fallback: one 70B NIM attempt.
-        // Worst case ~100s, comfortably under the app's 120s wait — never an infinite spinner.
-        try { return send(res, req, 200, parseLooseJson(await gemini(pr, { json: true, maxTokens: 8000, retries: 1, timeoutMs: 50000 }))); }
-        catch {
-          try { return send(res, req, 200, parseLooseJson(await nim(pr, { model: LESSON_MODEL, maxTokens: 2400, temperature: 0.7, json: true, timeoutMs: 50000 }))); } catch {}
-          return send(res, req, 503, { error: 'could not generate lesson' });
-        }
+        try { return send(res, req, 200, parseLooseJson(await nim(pr, { model: LESSON_MODEL, maxTokens: 2400, temperature: 0.7, json: true, timeoutMs: 45000 }))); } catch {}
+        try { return send(res, req, 200, parseLooseJson(await nim(pr, { maxTokens: 1600, temperature: 0.6, json: true, timeoutMs: 30000 }))); } catch {}
+        return send(res, req, 503, { error: 'could not generate lesson' });
       }
       if (p === '/ai/doubt') {
         const text = await gemini(`Lesson: ${String(body.lessonTitle || '').slice(0, 200)}\n${String(body.lessonText || '').slice(0, 8000)}\n\nStudent question: ${String(body.question || '').slice(0, 1000)}\nAnswer clearly in ~250 words; use up-to-date info if needed.`, { grounding: true });
