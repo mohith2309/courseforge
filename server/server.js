@@ -34,6 +34,12 @@ const LESSON_MODEL = cfg('NVIDIA_LESSON_MODEL', 'meta/llama-3.3-70b-instruct');
 const GROQ_KEY = cfg('GROQ_API_KEY');
 const GROQ_MODEL = cfg('GROQ_MODEL', 'llama-3.3-70b-versatile');
 const GROQ_LIVE = Boolean(GROQ_KEY);
+const GH_TOKEN = cfg('GITHUB_MODELS_TOKEN');
+const GH_MODEL = cfg('GITHUB_MODELS_MODEL', 'openai/gpt-4.1-mini');
+const GH_LIVE = Boolean(GH_TOKEN);
+const MISTRAL_KEY = cfg('MISTRAL_API_KEY');
+const MISTRAL_MODEL = cfg('MISTRAL_MODEL', 'mistral-large-latest');
+const MISTRAL_LIVE = Boolean(MISTRAL_KEY);
 const RZP_KEY_ID = cfg('RAZORPAY_KEY_ID');
 const RZP_KEY_SECRET = cfg('RAZORPAY_KEY_SECRET');
 const RZP_LIVE = Boolean(RZP_KEY_ID && RZP_KEY_SECRET);
@@ -157,11 +163,28 @@ async function nim(prompt, { maxTokens = 900, temperature = 0.4, model = NIM_MOD
   if (status !== 200) throw new Error(`NIM ${status}`);
   return body.choices[0].message.content;
 }
-async function groq(prompt, { maxTokens = 4000, temperature = 0.6, json = false } = {}) {
+async function groq(prompt, { maxTokens = 4000, temperature = 0.6, json = false, timeoutMs = 15000 } = {}) {
   const reqBody = { model: GROQ_MODEL, messages: [{ role: 'user', content: prompt }], max_tokens: maxTokens, temperature };
   if (json) reqBody.response_format = { type: 'json_object' };
-  const { status, body } = await httpsJson('https://api.groq.com/openai/v1/chat/completions', { headers: { Authorization: `Bearer ${GROQ_KEY}` }, body: reqBody });
+  const { status, body } = await httpsJson('https://api.groq.com/openai/v1/chat/completions', { headers: { Authorization: `Bearer ${GROQ_KEY}` }, body: reqBody, timeoutMs });
   if (status !== 200) throw new Error(`Groq ${status}`);
+  return body.choices[0].message.content;
+}
+// GitHub Models (OpenAI-compatible). High quality (gpt-4.1-mini) but low daily
+// limits — used as a fallback, not the primary.
+async function ghModels(prompt, { maxTokens = 2400, temperature = 0.6, json = false, timeoutMs = 18000 } = {}) {
+  const reqBody = { model: GH_MODEL, messages: [{ role: 'user', content: prompt }], max_tokens: maxTokens, temperature };
+  if (json) reqBody.response_format = { type: 'json_object' };
+  const { status, body } = await httpsJson('https://models.github.ai/inference/chat/completions', { headers: { Authorization: `Bearer ${GH_TOKEN}` }, body: reqBody, timeoutMs });
+  if (status !== 200) throw new Error(`GitHubModels ${status}`);
+  return body.choices[0].message.content;
+}
+// Mistral AI (OpenAI-compatible). High quality, reliable, good free limits.
+async function mistral(prompt, { maxTokens = 2400, temperature = 0.5, json = false, model = MISTRAL_MODEL, timeoutMs = 16000 } = {}) {
+  const reqBody = { model, messages: [{ role: 'user', content: prompt }], max_tokens: maxTokens, temperature };
+  if (json) reqBody.response_format = { type: 'json_object' };
+  const { status, body } = await httpsJson('https://api.mistral.ai/v1/chat/completions', { headers: { Authorization: `Bearer ${MISTRAL_KEY}` }, body: reqBody, timeoutMs });
+  if (status !== 200) throw new Error(`Mistral ${status}`);
   return body.choices[0].message.content;
 }
 function coursePrompt(goal) {
@@ -302,7 +325,7 @@ const server = http.createServer(async (req, res) => {
   try {
     if (m === 'GET' && p === '/health') {
       return send(res, req, 200, {
-        ok: true, gemini: Boolean(GEMINI_KEY), nim: Boolean(NIM_KEY), groq: GROQ_LIVE,
+        ok: true, gemini: Boolean(GEMINI_KEY), nim: Boolean(NIM_KEY), groq: GROQ_LIVE, mistral: MISTRAL_LIVE, github: GH_LIVE,
         razorpay: RZP_LIVE, store: USE_FIRESTORE ? 'firestore' : USE_RTDB ? 'firebase-rtdb' : 'file',
         secure: true,
       });
@@ -319,8 +342,10 @@ const server = http.createServer(async (req, res) => {
       if (p === '/ai/generate-course') {
         const goal = String(body.goal || '').slice(0, 2000);
         if (!goal) return send(res, req, 400, { error: 'goal required' });
-        // Groq 70B (primary) → NVIDIA 70B (quality) → NVIDIA 8B (fast). Gemini omitted (0 quota).
+        // Groq 70B → Mistral large → GitHub gpt-4.1-mini → NVIDIA 70B → 8B. (Gemini omitted: 0 quota.)
         if (GROQ_LIVE) { try { return send(res, req, 200, parseLooseJson(await groq(coursePrompt(goal), { json: true, maxTokens: 8000 }))); } catch {} }
+        if (MISTRAL_LIVE) { try { return send(res, req, 200, parseLooseJson(await mistral(coursePrompt(goal), { json: true, maxTokens: 8000 }))); } catch {} }
+        if (GH_LIVE) { try { return send(res, req, 200, parseLooseJson(await ghModels(coursePrompt(goal), { json: true, maxTokens: 8000 }))); } catch {} }
         const nimCoursePrompt = `Create a study course for: "${goal}". Return ONLY JSON {"title":"","subtitle":"","description":"","category":"General","tags":[],"thumbnailEmoji":"📘","modules":[{"title":"","description":"","lessons":[{"title":"","summary":"","script":"100-150 word lesson","keyPoints":["3-4 short bullets"],"durationMinutes":8,"quiz":{"questions":[{"stem":"","options":["","","",""],"correctIndex":0,"explanation":""}]}}]}]}. Exactly 4 modules, 2 lessons each, 3 questions each, scripts under 130 words.`;
         try { return send(res, req, 200, parseLooseJson(await nim(nimCoursePrompt, { model: LESSON_MODEL, maxTokens: 6000, temperature: 0.5, json: true, timeoutMs: 55000 }))); } catch {}
         try { return send(res, req, 200, parseLooseJson(await nim(nimCoursePrompt, { maxTokens: 5000, temperature: 0.5, json: true, timeoutMs: 40000 }))); } catch {}
@@ -328,12 +353,12 @@ const server = http.createServer(async (req, res) => {
       }
       if (p === '/ai/lesson') {
         const pr = lessonPrompt(String(body.courseTitle || '').slice(0, 200), String(body.moduleTitle || '').slice(0, 200), String(body.lessonTitle || '').slice(0, 200), String(body.summary || '').slice(0, 500));
-        // Provider chain, each bounded so the screen never hangs:
-        // Groq 70B (~1s, primary) → NVIDIA 70B (quality) → NVIDIA 8B (fast safety net).
-        // (Gemini is omitted — its key has 0 free-tier quota and only errors.)
-        if (GROQ_LIVE) { try { return send(res, req, 200, parseLooseJson(await groq(pr, { json: true, maxTokens: 2400 }))); } catch {} }
-        try { return send(res, req, 200, parseLooseJson(await nim(pr, { model: LESSON_MODEL, maxTokens: 2400, temperature: 0.7, json: true, timeoutMs: 45000 }))); } catch {}
-        try { return send(res, req, 200, parseLooseJson(await nim(pr, { maxTokens: 1600, temperature: 0.6, json: true, timeoutMs: 30000 }))); } catch {}
+        // Lessons are frequent, so keep the chain SHORT to avoid stacked-timeout tails:
+        // Groq 70B (~0.3-4s, primary) → NVIDIA 8B (~2.5s, fast reliable floor).
+        // Mistral/GitHub are reserved for course generation (rare) where their tight
+        // free limits don't cause queueing. Gemini omitted (0 quota).
+        if (GROQ_LIVE) { try { return send(res, req, 200, parseLooseJson(await groq(pr, { json: true, maxTokens: 2400, timeoutMs: 14000 }))); } catch {} }
+        try { return send(res, req, 200, parseLooseJson(await nim(pr, { maxTokens: 1800, temperature: 0.6, json: true, timeoutMs: 18000 }))); } catch {}
         return send(res, req, 503, { error: 'could not generate lesson' });
       }
       if (p === '/ai/doubt') {
