@@ -1,0 +1,13 @@
+{
+  "name": "courseforge-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Zero-dependency CourseForge backend: holds AI keys, proxies generation, accounts + publishing.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
