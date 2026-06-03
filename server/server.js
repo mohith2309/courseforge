@@ -353,12 +353,12 @@ const server = http.createServer(async (req, res) => {
       }
       if (p === '/ai/lesson') {
         const pr = lessonPrompt(String(body.courseTitle || '').slice(0, 200), String(body.moduleTitle || '').slice(0, 200), String(body.lessonTitle || '').slice(0, 200), String(body.summary || '').slice(0, 500));
-        // Lessons are frequent, so keep the chain SHORT to avoid stacked-timeout tails:
-        // Groq 70B (~0.3-4s, primary) → NVIDIA 8B (~2.5s, fast reliable floor).
-        // Mistral/GitHub are reserved for course generation (rare) where their tight
-        // free limits don't cause queueing. Gemini omitted (0 quota).
+        // Sequential, tight caps: Groq 70B (~4s, primary) → NVIDIA 8B (~2.5s floor)
+        // → Mistral large (quality backup). Lessons load one-at-a-time as the user
+        // reads, so this serves in ~4s in real use. GitHub/Gemini omitted (limit/quota).
         if (GROQ_LIVE) { try { return send(res, req, 200, parseLooseJson(await groq(pr, { json: true, maxTokens: 2400, timeoutMs: 14000 }))); } catch {} }
-        try { return send(res, req, 200, parseLooseJson(await nim(pr, { maxTokens: 1800, temperature: 0.6, json: true, timeoutMs: 18000 }))); } catch {}
+        try { return send(res, req, 200, parseLooseJson(await nim(pr, { maxTokens: 1800, temperature: 0.6, json: true, timeoutMs: 16000 }))); } catch {}
+        if (MISTRAL_LIVE) { try { return send(res, req, 200, parseLooseJson(await mistral(pr, { json: true, maxTokens: 2400, timeoutMs: 14000 }))); } catch {} }
         return send(res, req, 503, { error: 'could not generate lesson' });
       }
       if (p === '/ai/doubt') {
