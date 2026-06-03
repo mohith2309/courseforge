@@ -276,10 +276,16 @@ function corsFor(req) {
 function send(res, req, code, obj) { res.writeHead(code, corsFor(req)); res.end(JSON.stringify(obj)); }
 function readBody(req) {
   return new Promise((resolve) => {
-    let b = '', size = 0, tooBig = false;
-    req.on('data', (c) => { size += c.length; if (size > MAX_BODY) { tooBig = true; req.destroy(); } else b += c; });
-    req.on('end', () => { if (tooBig) return resolve({ __big: true }); try { resolve(b ? JSON.parse(b) : {}); } catch { resolve({}); } });
-    req.on('error', () => resolve(tooBig ? { __big: true } : {}));
+    let b = '', size = 0, done = false;
+    const finish = (v) => { if (!done) { done = true; resolve(v); } };
+    req.on('data', (c) => {
+      if (done) return;            // stop buffering once we've decided (memory-safe)
+      size += c.length;
+      if (size > MAX_BODY) { finish({ __big: true }); return; } // reply cleanly, don't reset socket
+      b += c;
+    });
+    req.on('end', () => { try { finish(b ? JSON.parse(b) : {}); } catch { finish({}); } });
+    req.on('error', () => finish({}));
   });
 }
 
