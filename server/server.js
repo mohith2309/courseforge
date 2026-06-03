@@ -374,6 +374,9 @@ const server = http.createServer(async (req, res) => {
         // (a full ~450-word lesson) to keep every provider fast. One lesson ≈ 2k tokens,
         // well under Groq's 12k/min, so Groq serves real one-at-a-time use every time.
         if (GROQ_LIVE) { try { return send(res, req, 200, parseLooseJson(await groq(pr, { json: true, maxTokens: 1800, timeoutMs: 12000 }))); } catch {} }
+        // Mistral SMALL (not large) — fast (~7s) and on SEPARATE quota, so it covers Groq
+        // outages/daily-limit without the slowness of mistral-large.
+        if (MISTRAL_LIVE) { try { return send(res, req, 200, parseLooseJson(await mistral(pr, { json: true, maxTokens: 1800, model: 'mistral-small-latest', timeoutMs: 16000 }))); } catch {} }
         try { return send(res, req, 200, parseLooseJson(await nim(pr, { maxTokens: 1800, temperature: 0.6, json: true, timeoutMs: 16000 }))); } catch {}
         if (GH_LIVE) { try { return send(res, req, 200, parseLooseJson(await ghModels(pr, { json: true, maxTokens: 1800, timeoutMs: 18000 }))); } catch {} }
         return send(res, req, 503, { error: 'could not generate lesson' });
