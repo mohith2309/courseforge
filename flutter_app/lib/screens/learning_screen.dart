@@ -42,24 +42,37 @@ class _LearningScreenState extends ConsumerState<LearningScreen> {
       (m) => m.lessons.any((l) => l.id == lesson.id),
       orElse: () => course.modules.first,
     );
-    final data = await api.generateLesson(
-      courseTitle: course.title,
-      moduleTitle: module.title,
-      lessonTitle: lesson.title,
-      summary: lesson.summary,
-    );
-    if (data != null && (data['script']?.toString().isNotEmpty ?? false)) {
-      await ref.read(coursesProvider.notifier).updateLesson(
-        course.id,
-        lesson.id,
-        {
-          'script': data['script'],
-          if (data['keyPoints'] != null) 'keyPoints': data['keyPoints'],
-          if (data['quiz'] != null) 'quiz': data['quiz'],
-        },
+    try {
+      final data = await api.generateLesson(
+        courseTitle: course.title,
+        moduleTitle: module.title,
+        lessonTitle: lesson.title,
+        summary: lesson.summary,
       );
+      if (data != null && (data['script']?.toString().isNotEmpty ?? false)) {
+        await ref.read(coursesProvider.notifier).updateLesson(
+          course.id,
+          lesson.id,
+          {
+            'script': data['script'],
+            if (data['keyPoints'] != null) 'keyPoints': data['keyPoints'],
+            if (data['quiz'] != null) 'quiz': data['quiz'],
+          },
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Couldn’t expand this lesson — showing the outline.')));
+      }
+    } catch (_) {
+      // Timeout / flaky network — fall back to the outline, never hang the screen.
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Network hiccup — showing the outline. Reopen to retry.')));
+      }
+    } finally {
+      // Always clear the spinner, success or failure.
+      if (mounted) setState(() => _busyLesson = null);
     }
-    if (mounted) setState(() => _busyLesson = null);
   }
 
   @override
