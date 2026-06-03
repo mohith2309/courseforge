@@ -59,6 +59,10 @@ function httpsJson(url, { method = 'POST', headers = {}, body, timeoutMs = 45000
     const data = body !== undefined && body !== null ? JSON.stringify(body) : null;
     const req = https.request(new URL(url), {
       method,
+      // Force IPv4: many hosts (Railway) have broken/disabled outbound IPv6, where
+      // an IPv6 attempt hangs until timeout. This was causing intermittent stalls
+      // across ALL providers at once. IPv4 is reliable everywhere these APIs live.
+      family: 4,
       headers: {
         'Content-Type': 'application/json',
         ...(data ? { 'Content-Length': Buffer.byteLength(data) } : {}),
