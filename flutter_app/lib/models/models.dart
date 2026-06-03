@@ -173,9 +173,11 @@ class Lesson {
         durationMinutes: (j['durationMinutes'] as num?)?.toInt() ?? 10,
         order: (j['order'] as num?)?.toInt() ?? 0,
         freePreview: j['freePreview'] as bool? ?? false,
-        quiz: j['quiz'] == null
-            ? null
-            : Quiz.fromJson(j['quiz'] as Map<String, dynamic>),
+        quiz: (j['quiz'] is Map)
+            ? Quiz.fromJson(Map<String, dynamic>.from(j['quiz'] as Map))
+            : (j['quiz'] is List)
+                ? Quiz.fromJson({'questions': j['quiz']})
+                : null,
       );
 }
 
@@ -199,14 +201,22 @@ class Quiz {
         'questions': questions.map((q) => q.toJson()).toList(),
       };
 
-  factory Quiz.fromJson(Map<String, dynamic> j) => Quiz(
-        id: j['id'] as String,
-        title: j['title'] as String? ?? 'Quiz',
-        passPercentage: (j['passPercentage'] as num?)?.toInt() ?? 60,
-        questions: (j['questions'] as List? ?? const [])
-            .map((q) => Question.fromJson(q as Map<String, dynamic>))
-            .toList(),
-      );
+  factory Quiz.fromJson(Map<String, dynamic> j) {
+    // AI-generated quizzes often arrive as just {questions:[...]} (no id/title)
+    // or even as a bare list — parse leniently and never throw.
+    final rawList = j['questions'] ?? j['items'] ?? const [];
+    final list = rawList is List ? rawList : const [];
+    return Quiz(
+      id: j['id'] as String? ?? 'quiz_${DateTime.now().microsecondsSinceEpoch}',
+      title: j['title'] as String? ?? 'Quiz',
+      passPercentage: (j['passPercentage'] as num?)?.toInt() ?? 60,
+      questions: list
+          .whereType<Map>()
+          .map((q) => Question.tryParse(Map<String, dynamic>.from(q)))
+          .whereType<Question>()
+          .toList(),
+    );
+  }
 }
 
 class Question {
@@ -229,12 +239,44 @@ class Question {
         'explanation': explanation,
       };
 
-  factory Question.fromJson(Map<String, dynamic> j) => Question(
-        stem: j['stem'] as String,
-        options: (j['options'] as List).cast<String>(),
-        correctIndex: (j['correctIndex'] as num).toInt(),
-        explanation: j['explanation'] as String? ?? '',
-      );
+  factory Question.fromJson(Map<String, dynamic> j) =>
+      tryParse(j) ??
+      const Question(
+          stem: '', options: ['', ''], correctIndex: 0, explanation: '');
+
+  /// Tolerant parser: accepts field-name variants (stem/question, correctIndex/
+  /// answer), string or letter answers, and skips genuinely broken questions
+  /// (returns null) so one bad item never crashes the whole course parse.
+  static Question? tryParse(Map<String, dynamic> j) {
+    final stem = (j['stem'] ?? j['question'] ?? j['q'] ?? '').toString().trim();
+    final opts = (j['options'] ?? j['choices'] ?? const []) is List
+        ? ((j['options'] ?? j['choices']) as List)
+            .map((e) => e.toString())
+            .toList()
+        : <String>[];
+    if (stem.isEmpty || opts.length < 2) return null;
+
+    final raw = j['correctIndex'] ?? j['answer'] ?? j['correct'] ?? 0;
+    var ci = 0;
+    if (raw is num) {
+      ci = raw.toInt();
+    } else if (raw is String) {
+      ci = int.tryParse(raw.trim()) ??
+          // "B" → index 1, or match the full answer text
+          (raw.trim().length == 1
+              ? raw.trim().toUpperCase().codeUnitAt(0) - 65
+              : opts.indexWhere(
+                  (o) => o.toLowerCase() == raw.trim().toLowerCase()));
+    }
+    if (ci < 0 || ci >= opts.length) ci = 0;
+
+    return Question(
+      stem: stem,
+      options: opts,
+      correctIndex: ci,
+      explanation: (j['explanation'] ?? j['rationale'] ?? '').toString(),
+    );
+  }
 }
 
 class Creator {
