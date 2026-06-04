@@ -272,8 +272,9 @@ function rzpVerify(orderId, paymentId, signature) {
   return safeEq(expected, signature || '');
 }
 function hashPw(pw, salt) { return crypto.scryptSync(pw, salt, 32).toString('hex'); }
-function enrich(entry, users) {
-  const u = users.find((x) => x.id === entry.publisherId);
+// Fast course enrichment using a pre-built user map (O(1) lookup vs O(U) find).
+function enrich(entry, userMap) {
+  const u = userMap[entry.publisherId];
   return { ...entry, publisherName: u ? u.name : 'Unknown', publisherVerified: u ? Boolean(u.verifiedPublisher) : false };
 }
 // Whitelist course fields on publish (prevents rating/enrollment spoofing).
@@ -303,17 +304,23 @@ function corsFor(req) {
   return h;
 }
 function send(res, req, code, obj) { res.writeHead(code, corsFor(req)); res.end(JSON.stringify(obj)); }
+// Memory-efficient body reader using Buffer chunks.
 function readBody(req) {
   return new Promise((resolve) => {
-    let b = '', size = 0, done = false;
+    const chunks = [];
+    let size = 0, done = false;
     const finish = (v) => { if (!done) { done = true; resolve(v); } };
     req.on('data', (c) => {
-      if (done) return;            // stop buffering once we've decided (memory-safe)
+      if (done) return;
       size += c.length;
-      if (size > MAX_BODY) { finish({ __big: true }); return; } // reply cleanly, don't reset socket
-      b += c;
+      if (size > MAX_BODY) { finish({ __big: true }); return; }
+      chunks.push(c);
     });
-    req.on('end', () => { try { finish(b ? JSON.parse(b) : {}); } catch { finish({}); } });
+    req.on('end', () => {
+      if (done) return;
+      const b = Buffer.concat(chunks).toString('utf8');
+      try { finish(b ? JSON.parse(b) : {}); } catch { finish({}); }
+    });
     req.on('error', () => finish({}));
   });
 }
@@ -432,7 +439,9 @@ const server = http.createServer(async (req, res) => {
     // ── Public catalog (read-only) ──
     if (m === 'GET' && p === '/courses/published') {
       const [published, users] = [await load('published'), await load('users')];
-      return send(res, req, 200, { courses: published.filter((c) => c.status === 'published').map((c) => enrich(c, users)) });
+      const userMap = {};
+      for (const u of users) userMap[u.id] = u;
+      return send(res, req, 200, { courses: published.filter((c) => c.status === 'published').map((c) => enrich(c, userMap)) });
     }
 
     // ── Publishing (auth required; publisherId from token) ──
@@ -502,7 +511,9 @@ const server = http.createServer(async (req, res) => {
       if (!isAdmin(req, url)) return send(res, req, 401, { error: 'admin token required' });
       if (m === 'GET' && p === '/admin/pending') {
         const [published, users] = [await load('published'), await load('users')];
-        return send(res, req, 200, { courses: published.filter((c) => c.status === 'pending_review').map((c) => enrich(c, users)) });
+        const userMap = {};
+        for (const u of users) userMap[u.id] = u;
+        return send(res, req, 200, { courses: published.filter((c) => c.status === 'pending_review').map((c) => enrich(c, userMap)) });
       }
       const body = await readBody(req);
       if (body.__big) return send(res, req, 413, { error: 'payload too large' });
