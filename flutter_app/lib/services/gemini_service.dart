@@ -15,11 +15,9 @@ class GeminiService {
             : const String.fromEnvironment('GEMINI_API_KEY',
                 defaultValue: _embeddedKey);
 
-  // Project "app api" (projects/127537905239). Note: embedding a key in a
-  // client app is fine for this local build, but for a public release route
-  // generation through a server instead of shipping the key.
-  static const _embeddedKey =
-      'AQ.Ab8RN6LXe9qwL0VeUFK-ydY6fIiU8EKg3gXcA6EMw0-w5CplJQ';
+  // No embedded key — AI now routes through the backend (server/ /ai/*). For a
+  // direct on-device build, pass one via --dart-define=GEMINI_API_KEY=...
+  static const _embeddedKey = '';
 
   final String _apiKey;
 
