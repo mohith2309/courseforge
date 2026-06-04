@@ -1,16 +1,17 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 
 import '../models/models.dart';
 import '../theme/app_theme.dart';
 
-/// An "interactive video" lesson player. Rather than a real video file (none
-/// exist for AI-generated lessons), it presents the generated content as a
-/// narrated, auto-advancing slide reel — title, then each key point, then a
-/// recap — so the lesson actually plays and the learner *sees* what was built.
+/// A narrated "video" lesson player. There's no real video file for AI-built
+/// lessons, so the generated content plays as an auto-advancing slide reel with
+/// real text-to-speech narration — title, the taught script chunked into slides,
+/// then a key-point recap. It reads each slide aloud and moves on when done.
 ///
-/// Free tier: a short version (intro + key points) with a corner watermark.
-/// Pro tier: the full detailed reel (adds script passages), no watermark.
+/// The slideshow is FREE for everyone (full lesson). The only paid distinction
+/// is the small corner watermark, removed on Pro.
 class LessonPlayer extends StatefulWidget {
   const LessonPlayer({
     super.key,
@@ -30,21 +31,39 @@ class LessonPlayer extends StatefulWidget {
 class _Slide {
   final String kicker;
   final String body;
-  final bool locked; // shown only as an upgrade prompt on free
-  const _Slide(this.kicker, this.body, {this.locked = false});
+  const _Slide(this.kicker, this.body);
 }
 
 class _LessonPlayerState extends State<LessonPlayer> {
+  final FlutterTts _tts = FlutterTts();
   late List<_Slide> _slides;
   int _i = 0;
   bool _playing = true;
+  bool _ttsOn = true;
+  bool _suppress = false; // ignore the completion fired by a programmatic stop()
   Timer? _timer;
 
   @override
   void initState() {
     super.initState();
     _slides = _buildSlides();
-    _arm();
+    _initTts();
+  }
+
+  Future<void> _initTts() async {
+    try {
+      await _tts.setLanguage('en-US');
+      await _tts.setSpeechRate(0.48); // natural classroom pace
+      await _tts.setPitch(1.0);
+      await _tts.setVolume(1.0);
+      _tts.setCompletionHandler(() {
+        if (!_suppress && _playing && mounted) _advanceFrom(_i);
+      });
+      _tts.setErrorHandler((_) {
+        // TTS engine hiccup — let the backup timer carry the reel forward.
+      });
+    } catch (_) {/* no TTS engine — backup timer still advances */}
+    if (_playing && mounted) _scheduleSlide();
   }
 
   @override
@@ -53,37 +72,24 @@ class _LessonPlayerState extends State<LessonPlayer> {
     if (old.lesson.id != widget.lesson.id || old.isPro != widget.isPro) {
       _slides = _buildSlides();
       _i = 0;
-      _arm();
+      if (_playing) _scheduleSlide();
     }
   }
 
   List<_Slide> _buildSlides() {
     final l = widget.lesson;
     final slides = <_Slide>[_Slide('LESSON', l.title)];
-    if (l.summary.isNotEmpty) {
-      slides.add(const _Slide('OVERVIEW', '').let(l.summary));
-    }
+    if (l.summary.isNotEmpty) slides.add(_Slide('OVERVIEW', l.summary));
 
-    // The lesson is TAUGHT here: the explanation itself, chunked into readable
-    // slides (~2 sentences each) so it plays like a narrated lesson.
+    // The lesson is TAUGHT here — the full script, chunked into readable,
+    // narratable slides. Free for everyone (no pay wall in the slideshow).
     final chunks = _chunkScript(l.script);
     final total = chunks.length;
-    // Everyone gets the FULL lesson — gating the teaching content made it feel
-    // like a short PPT. Premium is for the watermark-free player, unlimited AI
-    // courses, and extra practice quizzes (see the nudge below).
     for (var n = 0; n < chunks.length; n++) {
       slides.add(_Slide('LESSON · ${n + 1}/$total', chunks[n]));
     }
-    if (!widget.isPro && chunks.isNotEmpty) {
-      slides.add(_Slide(
-        'PRO',
-        'You\'ve got the full lesson free. Upgrade for a watermark-free player, '
-        'unlimited AI-built courses, and extra practice quizzes.',
-        locked: true,
-      ));
-    }
 
-    // Key points recap at the end.
+    // Key-point recap at the end.
     for (var n = 0; n < l.keyPoints.length; n++) {
       slides.add(_Slide('KEY POINT ${n + 1}', l.keyPoints[n]));
     }
@@ -93,7 +99,7 @@ class _LessonPlayerState extends State<LessonPlayer> {
     return slides;
   }
 
-  /// Split the script into ~2-sentence teaching slides.
+  /// Split the script into ~3-sentence teaching slides.
   List<String> _chunkScript(String script) {
     final clean = script.replaceAll(RegExp(r'\s+'), ' ').trim();
     if (clean.isEmpty) return const [];
@@ -108,133 +114,200 @@ class _LessonPlayerState extends State<LessonPlayer> {
     return out;
   }
 
-  void _arm() {
+  /// Narrate the current slide and arm a backup timer (in case TTS never fires
+  /// its completion — common on some devices), so the reel always moves on.
+  Future<void> _scheduleSlide() async {
     _timer?.cancel();
-    if (_playing) {
-      _timer = Timer.periodic(const Duration(milliseconds: 3800), (_) => _next());
+    final from = _i;
+    final body = _slides[_i].body.trim();
+    // Backup duration ~ reading time (≈2.3 words/sec) + buffer.
+    final words = body.isEmpty ? 1 : body.split(RegExp(r'\s+')).length;
+    final secs = (words / 2.3 + 1.8).clamp(3.5, 32.0);
+    _timer = Timer(
+        Duration(milliseconds: (secs * 1000).round()), () => _advanceFrom(from));
+
+    _suppress = true;
+    try {
+      await _tts.stop();
+    } catch (_) {}
+    _suppress = false;
+    if (_playing && _ttsOn && body.isNotEmpty) {
+      try {
+        await _tts.speak(body);
+      } catch (_) {}
     }
+  }
+
+  void _advanceFrom(int from) {
+    if (!mounted || !_playing || _i != from) return;
+    _next();
   }
 
   void _next() {
     if (_i < _slides.length - 1) {
       setState(() => _i++);
+      if (_playing) _scheduleSlide();
     } else {
       setState(() => _playing = false);
       _timer?.cancel();
+      _tts.stop();
+    }
+  }
+
+  void _prev() {
+    if (_i > 0) {
+      setState(() => _i--);
+      if (_playing) _scheduleSlide();
     }
   }
 
   void _togglePlay() {
     setState(() => _playing = !_playing);
-    _arm();
+    if (_playing) {
+      _scheduleSlide();
+    } else {
+      _timer?.cancel();
+      _tts.stop();
+    }
+  }
+
+  void _toggleTts() {
+    setState(() => _ttsOn = !_ttsOn);
+    if (!_ttsOn) {
+      _tts.stop();
+    } else if (_playing) {
+      _scheduleSlide();
+    }
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _tts.stop();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final slide = _slides[_i];
-    return AspectRatio(
-      aspectRatio: 16 / 9,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(Radii.md),
-        child: Stack(
-          children: [
-            // Background.
-            Positioned.fill(
-              child: DecoratedBox(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [AppColors.primaryDark, AppColors.secondary],
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AspectRatio(
+          aspectRatio: 16 / 9,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(Radii.md),
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [AppColors.primaryDark, AppColors.secondary],
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
-            // Slide content (tap right half = next, left half = prev).
-            Positioned.fill(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 18, 20, 34),
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 400),
-                  child: _SlideView(
-                    key: ValueKey(_i),
-                    slide: slide,
-                    onUpgrade: widget.onUpgrade,
+                Positioned.fill(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 18, 20, 40),
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 400),
+                      child: _SlideView(key: ValueKey(_i), slide: slide),
+                    ),
                   ),
                 ),
-              ),
-            ),
-            // Watermark (free only) — small, corner, like Gemini's.
-            if (!widget.isPro)
-              const Positioned(
-                right: 10,
-                top: 8,
-                child: Opacity(
-                  opacity: 0.6,
+                if (!widget.isPro)
+                  const Positioned(
+                    right: 10,
+                    top: 8,
+                    child: Opacity(
+                      opacity: 0.6,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.auto_awesome, size: 12, color: Colors.white),
+                          SizedBox(width: 3),
+                          Text('CourseForge',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600)),
+                        ],
+                      ),
+                    ),
+                  ),
+                // Tap zones: left = prev, right = next.
+                Positioned.fill(
                   child: Row(
-                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.auto_awesome, size: 12, color: Colors.white),
-                      SizedBox(width: 3),
-                      Text('CourseForge',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600)),
+                      Expanded(
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.translucent,
+                          onTap: _prev,
+                        ),
+                      ),
+                      Expanded(
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.translucent,
+                          onTap: _next,
+                        ),
+                      ),
                     ],
                   ),
                 ),
-              ),
-            // Tap zones.
-            Positioned.fill(
-              child: Row(
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.translucent,
-                      onTap: () => setState(() {
-                        if (_i > 0) _i--;
-                      }),
-                    ),
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: _Controls(
+                    playing: _playing,
+                    ttsOn: _ttsOn,
+                    index: _i,
+                    total: _slides.length,
+                    onToggle: _togglePlay,
+                    onToggleTts: _toggleTts,
                   ),
-                  Expanded(
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.translucent,
-                      onTap: _next,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-            // Controls + progress.
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: _Controls(
-                playing: _playing,
-                index: _i,
-                total: _slides.length,
-                onToggle: _togglePlay,
-              ),
-            ),
-          ],
+          ),
         ),
-      ),
+        // Narration transcript below the player (what TTS is reading).
+        const SizedBox(height: 12),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: context.surfaceAlt,
+            borderRadius: BorderRadius.circular(Radii.md),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(_ttsOn ? Icons.graphic_eq : Icons.subtitles_outlined,
+                  size: 18, color: AppColors.primary),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  slide.body,
+                  style: TextStyle(
+                      fontSize: 15, height: 1.45, color: context.fg),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
 
 class _SlideView extends StatelessWidget {
-  const _SlideView({super.key, required this.slide, required this.onUpgrade});
+  const _SlideView({super.key, required this.slide});
   final _Slide slide;
-  final VoidCallback onUpgrade;
 
   @override
   Widget build(BuildContext context) {
@@ -261,17 +334,6 @@ class _SlideView extends StatelessWidget {
             ),
           ),
         ),
-        if (slide.locked) ...[
-          const SizedBox(height: 12),
-          FilledButton.icon(
-            style: FilledButton.styleFrom(
-                backgroundColor: AppColors.accent,
-                visualDensity: VisualDensity.compact),
-            onPressed: onUpgrade,
-            icon: const Icon(Icons.workspace_premium, size: 16),
-            label: const Text('Upgrade to watch full'),
-          ),
-        ],
       ],
     );
   }
@@ -280,50 +342,52 @@ class _SlideView extends StatelessWidget {
 class _Controls extends StatelessWidget {
   const _Controls({
     required this.playing,
+    required this.ttsOn,
     required this.index,
     required this.total,
     required this.onToggle,
+    required this.onToggleTts,
   });
   final bool playing;
+  final bool ttsOn;
   final int index;
   final int total;
   final VoidCallback onToggle;
+  final VoidCallback onToggleTts;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return Row(
       children: [
-        Row(
-          children: [
-            IconButton(
-              onPressed: onToggle,
-              iconSize: 22,
-              icon: Icon(playing ? Icons.pause : Icons.play_arrow,
-                  color: Colors.white),
-            ),
-            Expanded(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(99),
-                child: LinearProgressIndicator(
-                  value: total <= 1 ? 1 : index / (total - 1),
-                  minHeight: 4,
-                  backgroundColor: Colors.white24,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Text('${index + 1}/$total',
-                style: const TextStyle(color: Colors.white, fontSize: 12)),
-            const SizedBox(width: 10),
-          ],
+        IconButton(
+          onPressed: onToggle,
+          iconSize: 22,
+          icon: Icon(playing ? Icons.pause : Icons.play_arrow,
+              color: Colors.white),
         ),
+        IconButton(
+          onPressed: onToggleTts,
+          iconSize: 20,
+          tooltip: ttsOn ? 'Mute narration' : 'Unmute narration',
+          icon: Icon(ttsOn ? Icons.volume_up : Icons.volume_off,
+              color: Colors.white),
+        ),
+        Expanded(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(99),
+            child: LinearProgressIndicator(
+              value: total <= 1 ? 1 : index / (total - 1),
+              minHeight: 4,
+              backgroundColor: Colors.white24,
+              color: Colors.white,
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Text('${index + 1}/$total',
+            style: const TextStyle(color: Colors.white, fontSize: 12)),
+        const SizedBox(width: 10),
       ],
     );
   }
-}
-
-// Tiny helper so the summary slide reads naturally.
-extension on _Slide {
-  _Slide let(String body) => _Slide(kicker, body, locked: locked);
 }
