@@ -27,3 +27,8 @@ flutter_app/ios/.symlinks/
 *.log
 .idea/
 .vscode/
+
+# Android release signing (NEVER commit — back these up separately)
+**/key.properties
+**/*.jks
+**/*.keystore
