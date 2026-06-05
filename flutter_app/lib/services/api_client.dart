@@ -129,13 +129,15 @@ class ApiClient {
     required String question,
     required Lesson lesson,
   }) async {
-    final r = await http.post(_u('/ai/doubt'),
-        headers: _ai,
-        body: jsonEncode({
-          'question': question,
-          'lessonTitle': lesson.title,
-          'lessonText': lesson.script,
-        }));
+    final r = await http
+        .post(_u('/ai/doubt'),
+            headers: _ai,
+            body: jsonEncode({
+              'question': question,
+              'lessonTitle': lesson.title,
+              'lessonText': lesson.script,
+            }))
+        .timeout(const Duration(seconds: 60));
     if (r.statusCode != 200) throw Exception('doubt ${r.statusCode}');
     return (jsonDecode(r.body) as Map<String, dynamic>)['text']?.toString() ?? '';
   }

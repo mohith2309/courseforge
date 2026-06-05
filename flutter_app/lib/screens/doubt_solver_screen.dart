@@ -41,9 +41,16 @@ class _DoubtSolverScreenState extends ConsumerState<DoubtSolverScreen> {
     });
     _scrollToEnd();
 
-    final answer = await ref
-        .read(aiServiceProvider)
-        .answerDoubt(question: text, lesson: _lesson!);
+    String answer;
+    try {
+      answer = await ref
+          .read(aiServiceProvider)
+          .answerDoubt(question: text, lesson: _lesson!);
+    } catch (_) {
+      answer =
+          'Sorry — I couldn\'t reach the tutor just now. Please check your '
+          'connection and try asking again.';
+    }
 
     if (!mounted) return;
     setState(() {

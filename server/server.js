@@ -193,23 +193,39 @@ async function mistral(prompt, { maxTokens = 2400, temperature = 0.5, json = fal
   if (status !== 200) throw new Error(`Mistral ${status}`);
   return body.choices[0].message.content;
 }
+
+// Plain-text generation with provider failover (doubt solver, practice, etc.).
+// Tries the fast/reliable providers in order; throws only if ALL fail. Gemini is
+// excluded (its key is dead) — this is why answers used to fall back to canned text.
+async function aiText(prompt, { maxTokens = 1200, temperature = 0.6 } = {}) {
+  const chain = [];
+  if (GROQ_LIVE) chain.push(() => groq(prompt, { maxTokens, temperature, timeoutMs: 16000 }));
+  if (MISTRAL_LIVE) chain.push(() => mistral(prompt, { maxTokens, temperature, model: 'mistral-small-latest', timeoutMs: 20000 }));
+  chain.push(() => nim(prompt, { maxTokens, temperature, timeoutMs: 22000 }));
+  if (GH_LIVE) chain.push(() => ghModels(prompt, { maxTokens, temperature, timeoutMs: 22000 }));
+  let lastErr;
+  for (const fn of chain) {
+    try { const t = await fn(); if (t && t.trim()) return t.trim(); } catch (e) { lastErr = e; }
+  }
+  throw lastErr || new Error('all providers failed');
+}
 function coursePrompt(goal) {
-  return `You are an expert tutor. A learner says: "${goal}".
-Design a focused self-study course. Return ONLY JSON:
-{"title":"","subtitle":"","description":"","category":"","tags":[],"thumbnailEmoji":"",
-"modules":[{"title":"","description":"","lessons":[{"title":"","summary":"",
-"script":"250-400 word lesson with a concrete example","keyPoints":[],"durationMinutes":10,
-"quiz":{"questions":[{"stem":"","options":["","","",""],"correctIndex":0,"explanation":""}]}}]}]}
-Make 4-5 modules with 2-3 lessons each, 3 quiz questions per lesson. Cover the topic broadly. Accurate and specific.`;
+  return `You are a world-class curriculum designer and expert tutor. A learner says: "${goal}".
+Design a thorough, in-depth self-study course that takes them from beginner to genuinely competent. Return ONLY JSON:
+{"title":"","subtitle":"","description":"a rich 3-4 sentence overview","category":"","tags":[],"thumbnailEmoji":"",
+"modules":[{"title":"","description":"2-3 sentence module overview","lessons":[{"title":"","summary":"1-2 sentence summary",
+"script":"a detailed 350-500 word mini-lesson with a concrete worked example","keyPoints":["5-6 substantial bullets"],"durationMinutes":12,
+"quiz":{"questions":[{"stem":"","options":["","","",""],"correctIndex":0,"explanation":"why, 1-2 sentences"}]}}]}]}
+Make 6-8 modules, each with 3-4 lessons, 3 quiz questions per lesson. Be comprehensive — cover fundamentals, intermediate, and advanced topics so nothing important is missing. Accurate, specific, and example-driven. Vary the correct-answer position; never hint the answer in the stem/options.`;
 }
 function lessonPrompt(courseTitle, moduleTitle, lessonTitle, summary) {
-  return `You are a patient, expert tutor teaching ONE lesson in depth.
+  return `You are a patient, masterful tutor writing ONE complete, in-depth lesson — like a chapter from an excellent textbook combined with a great teacher's spoken explanation.
 Course: ${courseTitle}
 Module: ${moduleTitle}
 Lesson: ${lessonTitle}
 ${summary ? `Focus: ${summary}\n` : ''}
 Return ONLY JSON: {"script":"","keyPoints":["..."],"quiz":{"questions":[{"stem":"","options":["","","",""],"correctIndex":0,"explanation":""}]}}
-The "script" MUST be 700-850 words across 6-7 substantial paragraphs that genuinely TEACH like a real class: (1) hook + plain-language definition, (2) an everyday analogy, (3) a concrete worked example with the steps shown, (4) explain step by step WHY it works, (5) a second example or a contrasting case, (6) common mistakes/misconceptions and how to avoid them, (7) a short recap. Conversational and flowing prose, NOT bullet points, NOT headings. keyPoints: 6-8 bullets. quiz: exactly 3 questions, 4 options each, one correct, with explanations. CRITICAL for the quiz: do NOT reveal which option is correct anywhere the learner can see before answering — never write "(correct)", "Answer:", "Correct option", asterisks, or hints in the stem or option text; the script and keyPoints must NOT state the quiz answers; vary which position (0-3) the correct option sits in across the 3 questions; put the reason ONLY inside each question's "explanation" field.`;
+The "script" MUST be VERY detailed — 1100 to 1600 words of flowing, conversational prose across 8-11 substantial paragraphs that truly TEACH: (1) an engaging hook and why this matters, (2) a clear plain-language definition of every key term, (3) a relatable everyday analogy, (4) a fully worked example with every step shown and explained, (5) the deeper "why it works" mechanism, (6) a second, contrasting example or edge case, (7) how it connects to the bigger picture / real-world uses, (8) common mistakes and misconceptions with how to avoid each, (9) a concise recap of the key takeaways. Write naturally as if speaking to one student — NO markdown headings, NO bullet lists inside the script, just rich paragraphs. Do not be brief; err on the side of MORE depth and detail. keyPoints: 7-9 substantial bullets. quiz: exactly 3 questions, 4 options each, one correct, each with a 1-2 sentence explanation. CRITICAL for the quiz: never reveal the correct option to the learner — no "(correct)", "Answer:", asterisks or hints in the stem/options; the script and keyPoints must NOT state the quiz answers; vary which position (0-3) holds the correct option; put the reasoning ONLY in each question's "explanation".`;
 }
 function parseLooseJson(text) {
   const s = text.indexOf('{'), e = text.lastIndexOf('}');
@@ -363,34 +379,47 @@ const server = http.createServer(async (req, res) => {
       if (p === '/ai/generate-course') {
         const goal = String(body.goal || '').slice(0, 2000);
         if (!goal) return send(res, req, 400, { error: 'goal required' });
-        // Groq 70B → Mistral large → GitHub gpt-4.1-mini → NVIDIA 70B → 8B. (Gemini omitted: 0 quota.)
-        if (GROQ_LIVE) { try { return send(res, req, 200, parseLooseJson(await groq(coursePrompt(goal), { json: true, maxTokens: 8000 }))); } catch {} }
-        if (MISTRAL_LIVE) { try { return send(res, req, 200, parseLooseJson(await mistral(coursePrompt(goal), { json: true, maxTokens: 8000 }))); } catch {} }
-        if (GH_LIVE) { try { return send(res, req, 200, parseLooseJson(await ghModels(coursePrompt(goal), { json: true, maxTokens: 8000 }))); } catch {} }
-        const nimCoursePrompt = `Create a study course for: "${goal}". Return ONLY JSON {"title":"","subtitle":"","description":"","category":"General","tags":[],"thumbnailEmoji":"📘","modules":[{"title":"","description":"","lessons":[{"title":"","summary":"","script":"100-150 word lesson","keyPoints":["3-4 short bullets"],"durationMinutes":8,"quiz":{"questions":[{"stem":"","options":["","","",""],"correctIndex":0,"explanation":""}]}}]}]}. Exactly 4 modules, 2 lessons each, 3 questions each, scripts under 130 words.`;
-        try { return send(res, req, 200, parseLooseJson(await nim(nimCoursePrompt, { model: LESSON_MODEL, maxTokens: 6000, temperature: 0.5, json: true, timeoutMs: 55000 }))); } catch {}
-        try { return send(res, req, 200, parseLooseJson(await nim(nimCoursePrompt, { maxTokens: 5000, temperature: 0.5, json: true, timeoutMs: 40000 }))); } catch {}
+        // Groq 70B → Mistral large → GitHub gpt-4.1-mini → NVIDIA. (Gemini omitted: 0 quota.)
+        // High token budget for a comprehensive 6-8 module course.
+        if (GROQ_LIVE) { try { return send(res, req, 200, parseLooseJson(await groq(coursePrompt(goal), { json: true, maxTokens: 10000, timeoutMs: 45000 }))); } catch {} }
+        if (MISTRAL_LIVE) { try { return send(res, req, 200, parseLooseJson(await mistral(coursePrompt(goal), { json: true, maxTokens: 14000, timeoutMs: 55000 }))); } catch {} }
+        if (GH_LIVE) { try { return send(res, req, 200, parseLooseJson(await ghModels(coursePrompt(goal), { json: true, maxTokens: 14000, timeoutMs: 50000 }))); } catch {} }
+        const nimCoursePrompt = `Create a thorough study course for: "${goal}". Return ONLY JSON {"title":"","subtitle":"","description":"3-4 sentences","category":"General","tags":[],"thumbnailEmoji":"📘","modules":[{"title":"","description":"2 sentences","lessons":[{"title":"","summary":"","script":"250-350 word lesson with an example","keyPoints":["4-5 bullets"],"durationMinutes":10,"quiz":{"questions":[{"stem":"","options":["","","",""],"correctIndex":0,"explanation":""}]}}]}]}. Make 5 modules, 3 lessons each, 3 questions each. Vary the correct-answer position; never hint the answer.`;
+        try { return send(res, req, 200, parseLooseJson(await nim(nimCoursePrompt, { model: LESSON_MODEL, maxTokens: 12000, temperature: 0.5, json: true, timeoutMs: 60000 }))); } catch {}
+        try { return send(res, req, 200, parseLooseJson(await nim(nimCoursePrompt, { maxTokens: 8000, temperature: 0.5, json: true, timeoutMs: 45000 }))); } catch {}
         return send(res, req, 503, { error: 'AI busy — try again' });
       }
       if (p === '/ai/lesson') {
         const pr = lessonPrompt(String(body.courseTitle || '').slice(0, 200), String(body.moduleTitle || '').slice(0, 200), String(body.lessonTitle || '').slice(0, 200), String(body.summary || '').slice(0, 500));
-        // maxTokens 2600 for a full 700-850 word taught lesson. Benchmarked length+parse:
-        // Groq 70B (best, ~5s) → Mistral-small (765w, ~13s, separate quota, serves today)
-        // → GitHub gpt-4.1-mini (~480-600w). NVIDIA dropped: 8B emits malformed JSON on
-        // long gens (parse fail → garbage), 70B times out. Timeouts sized for length.
-        if (GROQ_LIVE) { try { return send(res, req, 200, parseLooseJson(await groq(pr, { json: true, maxTokens: 2600, timeoutMs: 16000 }))); } catch {} }
-        if (MISTRAL_LIVE) { try { return send(res, req, 200, parseLooseJson(await mistral(pr, { json: true, maxTokens: 2600, model: 'mistral-small-latest', timeoutMs: 22000 }))); } catch {} }
-        if (GH_LIVE) { try { return send(res, req, 200, parseLooseJson(await ghModels(pr, { json: true, maxTokens: 2600, timeoutMs: 24000 }))); } catch {} }
+        // maxTokens 4096 for a VERY detailed 1100-1600 word lesson. Chain:
+        // Groq 70B (best) → Mistral-small (separate quota) → GitHub gpt-4.1-mini.
+        // Timeouts widened for the longer generation.
+        if (GROQ_LIVE) { try { return send(res, req, 200, parseLooseJson(await groq(pr, { json: true, maxTokens: 4096, timeoutMs: 24000 }))); } catch {} }
+        if (MISTRAL_LIVE) { try { return send(res, req, 200, parseLooseJson(await mistral(pr, { json: true, maxTokens: 4096, model: 'mistral-small-latest', timeoutMs: 30000 }))); } catch {} }
+        if (GH_LIVE) { try { return send(res, req, 200, parseLooseJson(await ghModels(pr, { json: true, maxTokens: 4096, timeoutMs: 30000 }))); } catch {} }
         return send(res, req, 503, { error: 'could not generate lesson' });
       }
       if (p === '/ai/doubt') {
-        const text = await gemini(`Lesson: ${String(body.lessonTitle || '').slice(0, 200)}\n${String(body.lessonText || '').slice(0, 8000)}\n\nStudent question: ${String(body.question || '').slice(0, 1000)}\nAnswer clearly in ~250 words; use up-to-date info if needed.`, { grounding: true });
-        return send(res, req, 200, { text });
+        const prompt = `You are an expert, patient tutor helping a student who is studying this lesson.
+Lesson: ${String(body.lessonTitle || '').slice(0, 200)}
+Lesson material:
+${String(body.lessonText || '').slice(0, 8000)}
+
+The student asks: "${String(body.question || '').slice(0, 1000)}"
+
+Give a thorough, genuinely helpful answer (about 250-400 words): directly answer the question, explain the reasoning step by step, give a concrete example, and clear up any likely confusion. Write in warm, plain language as flowing prose (no markdown headings).`;
+        try {
+          const text = await aiText(prompt, { maxTokens: 1400, temperature: 0.6 });
+          return send(res, req, 200, { text });
+        } catch { return send(res, req, 503, { error: 'AI busy — try again' }); }
       }
       if (p === '/ai/practice') {
-        const raw = await nim(`Create ${Math.min(10, Number(body.count) || 5)} ${String(body.difficulty || 'medium')} MCQs as a JSON array only:\n[{"stem":"","options":["","","",""],"correctIndex":0,"explanation":""}]\n\nLesson: ${String(body.lessonTitle || '').slice(0, 200)}\n${String(body.lessonText || '').slice(0, 8000)}`, { maxTokens: 1100 });
-        const s = raw.indexOf('['), e = raw.lastIndexOf(']');
-        return send(res, req, 200, { questions: s >= 0 ? JSON.parse(raw.slice(s, e + 1)) : [] });
+        const prompt = `Create ${Math.min(10, Number(body.count) || 5)} ${String(body.difficulty || 'medium')} multiple-choice questions as a JSON array ONLY (no prose):\n[{"stem":"","options":["","","",""],"correctIndex":0,"explanation":"why, 1-2 sentences"}]\n\nLesson: ${String(body.lessonTitle || '').slice(0, 200)}\n${String(body.lessonText || '').slice(0, 8000)}\n\nVary which position holds the correct option; never hint the answer in the stem or options.`;
+        try {
+          const raw = await aiText(prompt, { maxTokens: 1600, temperature: 0.5 });
+          const s = raw.indexOf('['), e = raw.lastIndexOf(']');
+          return send(res, req, 200, { questions: s >= 0 ? JSON.parse(raw.slice(s, e + 1).replace(/[ -]+/g, ' ')) : [] });
+        } catch { return send(res, req, 200, { questions: [] }); }
       }
       return send(res, req, 404, { error: 'not found' });
     }
