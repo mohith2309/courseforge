@@ -1,10 +1,9 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-/// NVIDIA NIM (OpenAI-compatible) provider. Fast and cheap — used for quick
-/// conversational tasks (doubt answers, practice-quiz drafts) while Gemini
-/// handles the heavy structured course generation. Same key as the GenPay
-/// backend; for a public release this belongs behind a server, not in the app.
+/// NVIDIA NIM (OpenAI-compatible) provider. AI now routes through the backend
+/// (server/ /ai/*), so no key is embedded in the app. For a direct on-device
+/// build, pass one via --dart-define=NVIDIA_API_KEY=...
 class NimService {
   NimService({String? apiKey, String? model})
       : _apiKey = (apiKey != null && apiKey.isNotEmpty)
@@ -13,8 +12,7 @@ class NimService {
                 defaultValue: _embeddedKey),
         _model = model ?? 'meta/llama-3.1-8b-instruct';
 
-  static const _embeddedKey =
-      'REDACTED_ROTATE_THIS_NVIDIA_KEY';
+  static const _embeddedKey = '';
   static const _base = 'https://integrate.api.nvidia.com/v1';
 
   final String _apiKey;
