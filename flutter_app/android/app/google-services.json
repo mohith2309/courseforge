@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "374206849691-h7cs726chilbls6nbmrjperdgdpa74mr.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.courseforge.courseforge",
+            "certificate_hash": "9736a7124c16dd501cb628a674a935101691c5f1"
+          }
+        },
+        {
           "client_id": "374206849691-kq29tkl0mrtrp59p8i998bvj4tb0qedp.apps.googleusercontent.com",
           "client_type": 3
         }
