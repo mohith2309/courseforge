@@ -15,6 +15,7 @@ import '../services/nim_service.dart';
 import '../services/payment_service.dart';
 import '../services/progress_store.dart';
 import '../services/razorpay_checkout.dart';
+import '../services/upi_payment.dart';
 
 // ---- Services ----------------------------------------------------------
 
@@ -30,6 +31,8 @@ final apiClientProvider = Provider<ApiClient>((ref) => ApiClient());
 
 final razorpayCheckoutProvider =
     Provider<RazorpayCheckout>((ref) => RazorpayCheckout());
+
+final upiPaymentProvider = Provider<UpiPayment>((ref) => UpiPayment());
 
 /// Multi-provider AI router. Routes through the backend when BACKEND_URL is
 /// set; otherwise uses the on-device Gemini + NIM providers.
@@ -513,21 +516,22 @@ final publishedCoursesProvider =
   return raw.map(PublishedListing.fromMap).toList();
 });
 
-/// Full in-app purchase: create a Razorpay order (server, if configured),
-/// open the **native** Razorpay checkout, verify, then add the course to the
-/// library and enroll. Returns null on success, or an error/cancel message.
+/// Marketplace purchase via Razorpay (Route): the server creates an order that
+/// auto-splits the creator's 70% to their linked account and keeps the 30%
+/// platform fee. Opens the native checkout, verifies, then owns + enrolls.
+/// Returns null on success, or an error/cancel message.
 Future<String?> buyListing(WidgetRef ref, PublishedListing listing) async {
   final api = ref.read(apiClientProvider);
   final auth = ref.read(authProvider);
   final checkout = ref.read(razorpayCheckoutProvider);
   final buyerId = auth.userId ?? 'guest';
 
-  // Server now requires a signed-in buyer (orders are tied to the account).
+  // Server ties orders (and the Route split) to a signed-in buyer.
   if (api.isConfigured && !auth.signedIn) {
     return 'Please sign in to buy this course.';
   }
 
-  // 1. Order (server-created when available, so it can be signature-verified).
+  // 1. Server order (carries the creator/platform transfer split).
   String? orderId;
   String? keyId;
   bool mockOrder = true;
@@ -543,7 +547,7 @@ Future<String?> buyListing(WidgetRef ref, PublishedListing listing) async {
     mockOrder = order.mock;
   }
 
-  // 2. Native checkout sheet.
+  // 2. Native Razorpay checkout.
   final result = await checkout.pay(
     amountInr: listing.priceInr,
     description: listing.course.title,

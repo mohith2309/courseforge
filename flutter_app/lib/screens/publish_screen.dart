@@ -20,7 +20,31 @@ class PublishScreen extends ConsumerStatefulWidget {
 class _PublishScreenState extends ConsumerState<PublishScreen> {
   Course? _selected;
   final _price = TextEditingController(text: '299');
+  final _payout = TextEditingController();
   bool _busy = false;
+  bool _payoutLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPayout();
+  }
+
+  Future<void> _loadPayout() async {
+    final acct = await ref.read(apiClientProvider).getPayoutAccount();
+    if (!mounted) return;
+    setState(() {
+      if (acct != null && acct.isNotEmpty) _payout.text = acct;
+      _payoutLoaded = true;
+    });
+  }
+
+  @override
+  void dispose() {
+    _price.dispose();
+    _payout.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -123,6 +147,29 @@ class _PublishScreenState extends ConsumerState<PublishScreen> {
                   ],
                 ),
               ),
+              const SizedBox(height: Gap.md),
+              Text('Get paid (UPI auto-split via Razorpay)',
+                  style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 4),
+              Text(
+                'Your 70% is sent straight to your linked Razorpay account on '
+                'every sale. Paste your Razorpay linked-account id (acc_…). '
+                'Don\'t have one? Onboard at razorpay.com → Route, then paste it '
+                'here. Until then, your earnings are held for manual payout.',
+                style: TextStyle(color: context.muted, fontSize: 12),
+              ),
+              const SizedBox(height: Gap.sm),
+              TextField(
+                controller: _payout,
+                decoration: InputDecoration(
+                  hintText: 'acc_XXXXXXXXXXXX',
+                  prefixIcon: const Icon(Icons.account_balance_outlined),
+                  suffixIcon: TextButton(
+                    onPressed: _payoutLoaded ? _savePayout : null,
+                    child: const Text('Save'),
+                  ),
+                ),
+              ),
               const SizedBox(height: Gap.lg),
               FilledButton.icon(
                 style: FilledButton.styleFrom(
@@ -170,6 +217,16 @@ class _PublishScreenState extends ConsumerState<PublishScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _savePayout() async {
+    final acct = _payout.text.trim();
+    final err = await ref.read(apiClientProvider).setPayoutAccount(acct);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(err ?? 'Payout account saved ✓'),
+      backgroundColor: err == null ? null : AppColors.destructive,
+    ));
   }
 
   Future<void> _publish(int price) async {

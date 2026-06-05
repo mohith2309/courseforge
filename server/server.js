@@ -51,6 +51,8 @@ const FIREBASE_PROJECT_NUM = cfg('FIREBASE_PROJECT_NUM', '374206849691');
 const ALLOWED_ORIGINS = cfg('ALLOWED_ORIGINS', '')
   .split(',').map((s) => s.trim()).filter(Boolean);
 const COMMISSION = 0.3;
+// Platform owner's user id — courses they publish keep 100% (no creator split).
+const PLATFORM_OWNER_ID = cfg('PLATFORM_OWNER_ID', '');
 const MAX_BODY = 512 * 1024; // 512 KB
 
 // ── HTTPS JSON helper ────────────────────────────────────────────────────────
@@ -259,10 +261,14 @@ setInterval(() => { // prune
   for (const [k, arr] of buckets) { const f = arr.filter((t) => now - t < 60000); if (f.length) buckets.set(k, f); else buckets.delete(k); }
 }, 120000).unref?.();
 
-async function rzpCreateOrder(amountPaise, receipt) {
+async function rzpCreateOrder(amountPaise, receipt, transfers) {
   const auth = 'Basic ' + Buffer.from(`${RZP_KEY_ID}:${RZP_KEY_SECRET}`).toString('base64');
+  const orderBody = { amount: amountPaise, currency: 'INR', receipt, payment_capture: 1 };
+  // Razorpay Route: split a slice of the payment to a creator's linked account
+  // (the rest stays with the platform automatically).
+  if (transfers && transfers.length) orderBody.transfers = transfers;
   const { status, body } = await httpsJson('https://api.razorpay.com/v1/orders', {
-    headers: { Authorization: auth }, body: { amount: amountPaise, currency: 'INR', receipt, payment_capture: 1 },
+    headers: { Authorization: auth }, body: orderBody,
   });
   if (status !== 200) throw new Error(`Razorpay ${status}`);
   return body;
@@ -449,6 +455,28 @@ const server = http.createServer(async (req, res) => {
       return send(res, req, 200, { ok: true, entry });
     }
 
+    // ── Creator payout account (auth) — link a Razorpay account for Route ──
+    if (m === 'POST' && p === '/publisher/payout-account') {
+      const uid = bearer(req);
+      if (!uid) return send(res, req, 401, { error: 'sign in required' });
+      const body = await readBody(req);
+      if (body.__big) return send(res, req, 413, { error: 'payload too large' });
+      const acct = String(body.accountId || '').trim();
+      if (!/^acc_[A-Za-z0-9]+$/.test(acct)) return send(res, req, 400, { error: 'expected a Razorpay account id like acc_XXXXXXXX' });
+      const users = await load('users');
+      const u = users.find((x) => x.id === uid);
+      if (!u) return send(res, req, 404, { error: 'user not found' });
+      u.razorpayAccountId = acct;
+      await save('users', users);
+      return send(res, req, 200, { ok: true });
+    }
+    if (m === 'GET' && p === '/publisher/payout-account') {
+      const uid = bearer(req);
+      if (!uid) return send(res, req, 401, { error: 'sign in required' });
+      const u = (await load('users')).find((x) => x.id === uid);
+      return send(res, req, 200, { accountId: u ? (u.razorpayAccountId || '') : '' });
+    }
+
     // ── Payments ──
     if (p.startsWith('/payments/')) {
       if (!rateLimit(`pay:${ip}`, 20, 60000)) return send(res, req, 429, { error: 'Too many requests' });
@@ -461,8 +489,18 @@ const server = http.createServer(async (req, res) => {
         const course = (await load('published')).find((c) => c.id === body.courseId && c.status === 'published');
         if (!course) return send(res, req, 404, { error: 'course not found' });
         const paise = Math.max(100, course.priceInr * 100); // server-side price (no client tampering)
+        // Route split: auto-pay the creator's share to their linked Razorpay
+        // account. If they haven't linked one, no transfer — their share is
+        // still recorded in the earnings ledger on /verify for manual payout.
+        let transfers;
+        const users = await load('users');
+        const publisher = users.find((u) => u.id === course.publisherId);
+        if (publisher && publisher.razorpayAccountId && publisher.id !== PLATFORM_OWNER_ID) {
+          const sharePaise = Math.max(100, Math.round((course.publisherShare || Math.round(course.priceInr * (1 - COMMISSION))) * 100));
+          transfers = [{ account: publisher.razorpayAccountId, amount: sharePaise, currency: 'INR', on_hold: false, notes: { courseId: course.id, kind: 'creator_share' } }];
+        }
         let order;
-        if (RZP_LIVE) { try { const o = await rzpCreateOrder(paise, `cf_${course.id}`.slice(0, 30)); order = { orderId: o.id, amount: o.amount, mock: false }; } catch {} }
+        if (RZP_LIVE) { try { const o = await rzpCreateOrder(paise, `cf_${course.id}`.slice(0, 30), transfers); order = { orderId: o.id, amount: o.amount, mock: false }; } catch {} }
         if (!order) order = { orderId: `order_mock_${crypto.randomBytes(6).toString('hex')}`, amount: paise, mock: true };
         const orders = await load('orders');
         orders.unshift({ orderId: order.orderId, courseId: course.id, buyerId: uid, amountInr: course.priceInr, createdAt: Date.now() });

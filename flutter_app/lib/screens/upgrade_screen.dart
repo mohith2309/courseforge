@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/providers.dart';
+import '../services/upi_payment.dart';
 import '../theme/app_theme.dart';
+import '../widgets/upi_checkout_sheet.dart';
 
 class UpgradeScreen extends ConsumerWidget {
   const UpgradeScreen({super.key});
@@ -108,7 +110,7 @@ class UpgradeScreen extends ConsumerWidget {
             ),
             const SizedBox(height: Gap.sm),
             Text(
-              'Secured by Razorpay (test mode). Payment opens in-app.',
+              'Pay by UPI to ${UpiPayment.payeeVpa} — opens GPay / PhonePe / FamPay.',
               style: TextStyle(color: context.muted, fontSize: 12),
               textAlign: TextAlign.center,
             ),
@@ -120,17 +122,14 @@ class UpgradeScreen extends ConsumerWidget {
   }
 
   Future<void> _activate(BuildContext context, WidgetRef ref, int amountInr) async {
-    final result = await ref.read(razorpayCheckoutProvider).pay(
-          amountInr: amountInr,
-          description: 'CourseForge Pro',
-        );
-    if (!context.mounted) return;
-    if (!result.success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result.error ?? 'Payment cancelled')),
-      );
-      return;
-    }
+    final paid = await runUpiCheckout(
+      context,
+      ref,
+      amountInr: amountInr,
+      note: 'CourseForge Pro',
+      txnRef: 'CFPRO${DateTime.now().millisecondsSinceEpoch}',
+    );
+    if (!context.mounted || !paid) return;
     await ref.read(isProProvider.notifier).setPro(true);
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

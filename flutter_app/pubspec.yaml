@@ -62,6 +62,9 @@ dependencies:
   # Text-to-speech narration for the lesson player (native Android/iOS TTS)
   flutter_tts: ^4.2.0
 
+  # Launch UPI apps (GPay/PhonePe/FamPay) for direct UPI payments
+  url_launcher: ^6.3.0
+
   # Misc UI
   google_fonts: ^6.2.1
   intl: ^0.19.0

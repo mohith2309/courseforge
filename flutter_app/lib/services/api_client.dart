@@ -183,6 +183,31 @@ class ApiClient {
     }
   }
 
+  /// Save the creator's Razorpay linked account id (acc_…) so their course
+  /// sales auto-split to them via Razorpay Route. Returns null on success.
+  Future<String?> setPayoutAccount(String accountId) async {
+    try {
+      final r = await http.post(_u('/publisher/payout-account'),
+          headers: _authed, body: jsonEncode({'accountId': accountId}));
+      if (r.statusCode == 200) return null;
+      final j = jsonDecode(r.body) as Map<String, dynamic>;
+      return j['error']?.toString() ?? 'Failed (${r.statusCode})';
+    } catch (_) {
+      return 'Network error — is the server running?';
+    }
+  }
+
+  Future<String?> getPayoutAccount() async {
+    try {
+      final r = await http.get(_u('/publisher/payout-account'), headers: _authed);
+      if (r.statusCode != 200) return null;
+      return (jsonDecode(r.body) as Map<String, dynamic>)['accountId']
+          ?.toString();
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<List<Map<String, dynamic>>> publishedCourses() async {
     try {
       final r = await http.get(_u('/courses/published'));
