@@ -111,8 +111,10 @@ class EmptyState extends StatelessWidget {
             Text(message,
                 style: TextStyle(color: muted),
                 textAlign: TextAlign.center),
-            if (action != null) const SizedBox(height: Gap.lg),
-            ?action,
+            if (action != null) ...[
+              const SizedBox(height: Gap.lg),
+              action!,
+            ],
           ],
         ),
       ),

@@ -1,0 +1,3 @@
+## 2025-05-15 - [Course Model Optimization]
+**Learning:** Derived properties like total lesson counts and flat lesson lists were being recalculated on every access via O(n) getters. By moving these to pre-calculated final fields in the constructor's initializer list, we achieve O(1) access without duplicating logic across different instantiation paths (JSON vs. AI-generated).
+**Action:** Always prefer pre-calculating immutable model stats in the constructor if they are frequently accessed in UI loops or lists. Use the initializer list to keep the logic DRY and centralized within the model itself.

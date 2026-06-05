@@ -18,7 +18,13 @@ class Course {
   final bool aiGenerated; // true when built by the AI from a learner's goal
   final List<Module> modules;
 
-  const Course({
+  // Pre-calculated stats (O(1) access).
+  final int totalLessons;
+  final int totalQuestions;
+  final int totalMinutes;
+  final List<Lesson> allLessons;
+
+  Course({
     required this.id,
     required this.title,
     required this.subtitle,
@@ -34,23 +40,18 @@ class Course {
     required this.featured,
     this.aiGenerated = false,
     required this.modules,
-  });
-
-  int get totalLessons =>
-      modules.fold(0, (sum, m) => sum + m.lessons.length);
-
-  int get totalQuestions => modules.fold(
-        0,
-        (sum, m) => sum +
-            m.lessons.fold(0, (s, l) => s + (l.quiz?.questions.length ?? 0)),
-      );
-
-  int get totalMinutes =>
-      modules.fold(0, (sum, m) => sum + m.lessons.fold(0, (s, l) => s + l.durationMinutes));
-
-  /// Flat ordered list of every lesson across modules — handy for nav.
-  List<Lesson> get allLessons =>
-      [for (final m in modules) ...m.lessons];
+  })  : totalLessons = modules.fold(0, (sum, m) => sum + m.lessons.length),
+        totalQuestions = modules.fold(
+          0,
+          (sum, m) =>
+              sum +
+              m.lessons.fold(0, (s, l) => s + (l.quiz?.questions.length ?? 0)),
+        ),
+        totalMinutes = modules.fold(
+          0,
+          (sum, m) => sum + m.lessons.fold(0, (s, l) => s + l.durationMinutes),
+        ),
+        allLessons = [for (final m in modules) ...m.lessons];
 
   Map<String, dynamic> toJson() => {
         'id': id,
