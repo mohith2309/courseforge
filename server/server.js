@@ -580,6 +580,20 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
         await save('orders', orders);
         return send(res, req, 200, { orderId: order.orderId, amount: order.amount, currency: 'INR', keyId: RZP_KEY_ID, mock: order.mock });
       }
+      // Razorpay order for a CourseForge Pro subscription (platform keeps 100%).
+      if (m === 'POST' && p === '/payments/create-pro-order') {
+        const allowed = { 199: 'monthly', 1499: 'yearly' }; // server-side prices
+        const amountInr = Number(body.amountInr) || 0;
+        if (!allowed[amountInr]) return send(res, req, 400, { error: 'invalid plan' });
+        const paise = amountInr * 100;
+        let order;
+        if (RZP_LIVE) { try { const o = await rzpCreateOrder(paise, `cfpro_${Date.now()}`.slice(0, 30)); order = { orderId: o.id, amount: o.amount, mock: false }; } catch {} }
+        if (!order) order = { orderId: `order_mock_${crypto.randomBytes(6).toString('hex')}`, amount: paise, mock: true };
+        const orders = await load('orders');
+        orders.unshift({ orderId: order.orderId, kind: 'pro', plan: allowed[amountInr], buyerId: uid, amountInr, createdAt: Date.now() });
+        await save('orders', orders);
+        return send(res, req, 200, { orderId: order.orderId, amount: order.amount, currency: 'INR', keyId: RZP_KEY_ID, mock: order.mock });
+      }
       if (m === 'POST' && p === '/payments/verify') {
         const orders = await load('orders');
         const order = orders.find((o) => o.orderId === body.orderId && o.buyerId === uid);
@@ -589,6 +603,13 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
           if (!rzpVerify(body.orderId, body.paymentId, body.signature))
             return send(res, req, 400, { error: 'signature verification failed' });
         } // else: dev/test simulated completion allowed
+        // Pro subscription order → flip the user's Pro flag, done.
+        if (order.kind === 'pro') {
+          const users = await load('users');
+          const u = users.find((x) => x.id === uid);
+          if (u) { u.pro = true; await save('users', users); }
+          return send(res, req, 200, { ok: true, pro: true });
+        }
         const purchases = await load('purchases');
         purchases.unshift({ id: crypto.randomUUID(), courseId: order.courseId, buyerId: uid, orderId: order.orderId, amountInr: order.amountInr, at: Date.now() });
         await save('purchases', purchases);

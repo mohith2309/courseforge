@@ -291,6 +291,24 @@ class ApiClient {
     }
   }
 
+  /// Razorpay order for a CourseForge Pro subscription (platform keeps 100%).
+  Future<OrderInfo?> createProOrder({required int amountInr}) async {
+    try {
+      final r = await http.post(_u('/payments/create-pro-order'),
+          headers: _authed, body: jsonEncode({'amountInr': amountInr}));
+      if (r.statusCode != 200) return null;
+      final j = jsonDecode(r.body) as Map<String, dynamic>;
+      return OrderInfo(
+        orderId: j['orderId'] as String,
+        amountPaise: (j['amount'] as num).toInt(),
+        keyId: j['keyId']?.toString() ?? '',
+        mock: j['mock'] as bool? ?? true,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Confirms payment. [paymentId]/[signature] come from the Razorpay checkout
   /// SDK in a real build; omitted here for a test-mode (simulated) completion.
   Future<bool> verifyPayment({

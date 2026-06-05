@@ -15,7 +15,6 @@ import '../services/nim_service.dart';
 import '../services/payment_service.dart';
 import '../services/progress_store.dart';
 import '../services/razorpay_checkout.dart';
-import '../services/upi_payment.dart';
 
 // ---- Services ----------------------------------------------------------
 
@@ -31,8 +30,6 @@ final apiClientProvider = Provider<ApiClient>((ref) => ApiClient());
 
 final razorpayCheckoutProvider =
     Provider<RazorpayCheckout>((ref) => RazorpayCheckout());
-
-final upiPaymentProvider = Provider<UpiPayment>((ref) => UpiPayment());
 
 /// Multi-provider AI router. Routes through the backend when BACKEND_URL is
 /// set; otherwise uses the on-device Gemini + NIM providers.

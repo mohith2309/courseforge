@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/providers.dart';
-import '../services/upi_payment.dart';
 import '../theme/app_theme.dart';
-import '../widgets/upi_checkout_sheet.dart';
 
 class UpgradeScreen extends ConsumerWidget {
   const UpgradeScreen({super.key});
@@ -110,7 +108,7 @@ class UpgradeScreen extends ConsumerWidget {
             ),
             const SizedBox(height: Gap.sm),
             Text(
-              'Pay by UPI to ${UpiPayment.payeeVpa} — opens GPay / PhonePe / FamPay.',
+              'Secure payment by Razorpay — UPI, cards, netbanking & wallets.',
               style: TextStyle(color: context.muted, fontSize: 12),
               textAlign: TextAlign.center,
             ),
@@ -122,19 +120,66 @@ class UpgradeScreen extends ConsumerWidget {
   }
 
   Future<void> _activate(BuildContext context, WidgetRef ref, int amountInr) async {
-    final paid = await runUpiCheckout(
-      context,
-      ref,
-      amountInr: amountInr,
-      note: 'CourseForge Pro',
-      txnRef: 'CFPRO${DateTime.now().millisecondsSinceEpoch}',
-    );
-    if (!context.mounted || !paid) return;
-    await ref.read(isProProvider.notifier).setPro(true);
-    // Record Pro on the server too (so it survives reinstall / new device).
-    if (ref.read(authProvider).signedIn) {
-      await ref.read(apiClientProvider).setProServer();
+    final api = ref.read(apiClientProvider);
+    final auth = ref.read(authProvider);
+    if (api.isConfigured && !auth.signedIn) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please sign in to upgrade to Pro.')),
+      );
+      return;
     }
+    // 1. Server-priced Pro order (platform keeps 100%).
+    String? orderId;
+    String? keyId;
+    bool mock = true;
+    if (api.isConfigured) {
+      final order = await api.createProOrder(amountInr: amountInr);
+      if (order == null) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not start checkout. Try again.')),
+          );
+        }
+        return;
+      }
+      orderId = order.orderId;
+      keyId = order.keyId;
+      mock = order.mock;
+    }
+    // 2. Native Razorpay checkout.
+    final result = await ref.read(razorpayCheckoutProvider).pay(
+          amountInr: amountInr,
+          description: 'CourseForge Pro',
+          orderId: orderId,
+          keyId: keyId,
+        );
+    if (!context.mounted) return;
+    if (!result.success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result.error ?? 'Payment cancelled')),
+      );
+      return;
+    }
+    // 3. Verify (server flips the Pro flag).
+    if (api.isConfigured && orderId != null) {
+      final ok = await api.verifyPayment(
+        orderId: orderId,
+        courseId: 'pro',
+        buyerId: auth.userId ?? 'guest',
+        paymentId: result.paymentId,
+        signature: result.signature,
+        mock: result.simulated || mock || result.signature == null,
+      );
+      if (!ok) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Payment could not be verified.')),
+          );
+        }
+        return;
+      }
+    }
+    await ref.read(isProProvider.notifier).setPro(true);
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Welcome to Pro! Watermark removed. 🎉')),
