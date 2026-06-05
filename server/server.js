@@ -337,7 +337,8 @@ const server = http.createServer(async (req, res) => {
 
     // ── AI (APP_KEY gate + tight rate limit) ──
     if (p.startsWith('/ai/')) {
-      if (APP_KEY && !safeEq(req.headers['x-app-key'] || '', APP_KEY))
+      // Security: fail closed. If APP_KEY is not configured or mismatch, deny access.
+      if (!APP_KEY || !safeEq(req.headers['x-app-key'] || '', APP_KEY))
         return send(res, req, 401, { error: 'app key required' });
       // Diagnostic: probe each provider from inside the server (not rate-limited).
       if (p === '/ai/diag') {
@@ -473,8 +474,10 @@ const server = http.createServer(async (req, res) => {
         const orders = await load('orders');
         const order = orders.find((o) => o.orderId === body.orderId && o.buyerId === uid);
         if (!order) return send(res, req, 400, { error: 'unknown order' });
-        const real = RZP_LIVE && !ALLOW_MOCK_PAYMENTS;
+        // Security: fail closed. Real payments mandatory in PROD or if explicitly enabled.
+        const real = PROD || (RZP_LIVE && !ALLOW_MOCK_PAYMENTS);
         if (real) {
+          if (!RZP_LIVE) return send(res, req, 503, { error: 'payment service misconfigured' });
           if (!rzpVerify(body.orderId, body.paymentId, body.signature))
             return send(res, req, 400, { error: 'signature verification failed' });
         } // else: dev/test simulated completion allowed
