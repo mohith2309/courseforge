@@ -479,6 +479,9 @@ const server = http.createServer(async (req, res) => {
             return send(res, req, 400, { error: 'signature verification failed' });
         } // else: dev/test simulated completion allowed
         const purchases = await load('purchases');
+        if (purchases.some((p) => p.orderId === body.orderId)) {
+          return send(res, req, 200, { ok: true, note: 'already processed' });
+        }
         purchases.unshift({ id: crypto.randomUUID(), courseId: order.courseId, buyerId: uid, orderId: order.orderId, amountInr: order.amountInr, at: Date.now() });
         await save('purchases', purchases);
         const published = await load('published');

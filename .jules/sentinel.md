@@ -1,0 +1,4 @@
+## 2025-05-14 - [Idempotency in Payment Verification]
+**Vulnerability:** The `/payments/verify` endpoint lacked an idempotency check, allowing the same `orderId` to be processed multiple times. This could lead to duplicate purchase records, inflated enrollment counts, and multiple credits to the publisher's earnings for a single real payment.
+**Learning:** Payment verification handlers must always verify if an order has already been finalized before executing side effects like granting access or crediting accounts. Relying on unique constraints at the database level is good, but explicit checks in the application logic provide better control and "fail-safe" behavior.
+**Prevention:** Implement a look-up in the purchases/orders store to ensure an `orderId` is only marked as successful once. Return a success status for subsequent duplicate requests to avoid client-side errors, but skip all processing logic.
