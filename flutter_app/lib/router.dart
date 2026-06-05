@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'providers/providers.dart';
 import 'widgets/pressable.dart';
 import 'screens/ai_builder_screen.dart';
 import 'screens/marketplace_screen.dart';
@@ -127,9 +128,24 @@ final routerProvider = Provider<GoRouter>((ref) {
   );
 });
 
-class _HomeShell extends StatelessWidget {
+class _HomeShell extends ConsumerStatefulWidget {
   const _HomeShell({required this.child});
   final Widget child;
+
+  @override
+  ConsumerState<_HomeShell> createState() => _HomeShellState();
+}
+
+class _HomeShellState extends ConsumerState<_HomeShell> {
+  @override
+  void initState() {
+    super.initState();
+    // On launch, pull the server's authoritative entitlements (Pro + owned
+    // courses) if the user is signed in — so unlocks can't be faked locally.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      syncEntitlements(ref, claim: false);
+    });
+  }
 
   static const _tabs = [
     (path: '/build', icon: Icons.auto_awesome_outlined, active: Icons.auto_awesome, label: 'Build'),
@@ -164,7 +180,7 @@ class _HomeShell extends StatelessWidget {
     return Scaffold(
       // Let body slide UNDER the floating island for the frosted-glass effect.
       extendBody: true,
-      body: child,
+      body: widget.child,
       // Floating "pill island" navigation (gradient active tab).
       bottomNavigationBar: SafeArea(
         top: false,

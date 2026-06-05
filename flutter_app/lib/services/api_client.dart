@@ -185,6 +185,52 @@ class ApiClient {
     }
   }
 
+  /// Server-authoritative entitlements (what this user owns + Pro). Null on error.
+  Future<Entitlements?> getEntitlements() async {
+    try {
+      final r = await http
+          .get(_u('/me/entitlements'), headers: _authed)
+          .timeout(const Duration(seconds: 12));
+      if (r.statusCode != 200) return null;
+      final j = jsonDecode(r.body) as Map<String, dynamic>;
+      return Entitlements(
+        pro: j['pro'] as bool? ?? false,
+        owned: (j['owned'] as List? ?? const []).map((e) => e.toString()).toList(),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Attach guest purchases / Pro to the signed-in account; returns the merged
+  /// authoritative entitlements.
+  Future<Entitlements?> claimEntitlements(List<String> courseIds, bool pro) async {
+    try {
+      final r = await http
+          .post(_u('/me/claim'),
+              headers: _authed,
+              body: jsonEncode({'courseIds': courseIds, 'pro': pro}))
+          .timeout(const Duration(seconds: 15));
+      if (r.statusCode != 200) return null;
+      final j = jsonDecode(r.body) as Map<String, dynamic>;
+      return Entitlements(
+        pro: j['pro'] as bool? ?? false,
+        owned: (j['owned'] as List? ?? const []).map((e) => e.toString()).toList(),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Record Pro on the server (after a confirmed UPI upgrade).
+  Future<void> setProServer() async {
+    try {
+      await http
+          .post(_u('/me/pro'), headers: _authed)
+          .timeout(const Duration(seconds: 12));
+    } catch (_) {/* best effort */}
+  }
+
   /// Save the creator's Razorpay linked account id (acc_…) so their course
   /// sales auto-split to them via Razorpay Route. Returns null on success.
   Future<String?> setPayoutAccount(String accountId) async {
@@ -316,6 +362,12 @@ class ApiClient {
       return 'Network error';
     }
   }
+}
+
+class Entitlements {
+  final bool pro;
+  final List<String> owned;
+  const Entitlements({required this.pro, required this.owned});
 }
 
 class OrderInfo {

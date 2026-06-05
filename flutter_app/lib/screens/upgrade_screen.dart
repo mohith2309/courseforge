@@ -131,6 +131,10 @@ class UpgradeScreen extends ConsumerWidget {
     );
     if (!context.mounted || !paid) return;
     await ref.read(isProProvider.notifier).setPro(true);
+    // Record Pro on the server too (so it survives reinstall / new device).
+    if (ref.read(authProvider).signedIn) {
+      await ref.read(apiClientProvider).setProServer();
+    }
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Welcome to Pro! Watermark removed. 🎉')),

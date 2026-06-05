@@ -156,6 +156,15 @@ class _Detail extends ConsumerWidget {
         SliverAppBar(
           pinned: true,
           expandedHeight: 200,
+          actions: [
+            // Publish YOUR AI-built courses straight to the marketplace.
+            if (course.aiGenerated)
+              IconButton(
+                tooltip: 'Publish to marketplace',
+                icon: const Icon(Icons.publish_outlined),
+                onPressed: () => context.push('/publish?course=${course.id}'),
+              ),
+          ],
           flexibleSpace: FlexibleSpaceBar(
             background: Container(
               decoration: const BoxDecoration(

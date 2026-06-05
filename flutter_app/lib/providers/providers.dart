@@ -569,11 +569,65 @@ Future<String?> buyListing(WidgetRef ref, PublishedListing listing) async {
     if (!ok) return 'Payment could not be verified.';
   }
 
-  // 4. Own it.
+  // 4. Own it (locally + record the id so it survives sign-in migration).
   final owned = listing.ownedCopy();
   await ref.read(coursesProvider.notifier).addCourse(owned);
   await ref.read(progressProvider.notifier).enroll(owned.id);
+  await recordOwnedLocally(listing.course.id);
   return null;
+}
+
+// ---- Entitlements (server is the source of truth) ----------------------
+
+const _ownedKey = 'courseforge_owned_v1';
+
+/// Remember a purchased course id locally so a guest's purchase can be claimed
+/// onto their account when they later sign in.
+Future<void> recordOwnedLocally(String courseId) async {
+  final prefs = await SharedPreferences.getInstance();
+  final list = prefs.getStringList(_ownedKey) ?? <String>[];
+  if (!list.contains(courseId)) {
+    list.add(courseId);
+    await prefs.setStringList(_ownedKey, list);
+  }
+}
+
+/// Sync entitlements with the server. On sign-in pass [claim] = true to attach
+/// guest purchases + Pro to the account; on launch pass false to just pull the
+/// authoritative state. The server wins for Pro + ownership (anti-tamper), and
+/// any owned course missing locally is fetched from the marketplace.
+Future<void> syncEntitlements(WidgetRef ref, {bool claim = false}) async {
+  final api = ref.read(apiClientProvider);
+  final auth = ref.read(authProvider);
+  if (!api.isConfigured || !auth.signedIn) return;
+  final prefs = await SharedPreferences.getInstance();
+  final localOwned = prefs.getStringList(_ownedKey) ?? <String>[];
+  final localPro = prefs.getBool('courseforge_is_pro_v1') ?? false;
+
+  final ent = claim
+      ? await api.claimEntitlements(localOwned, localPro)
+      : await api.getEntitlements();
+  if (ent == null) return;
+
+  await ref.read(isProProvider.notifier).setPro(ent.pro);
+  await prefs.setStringList(_ownedKey, ent.owned);
+
+  // Make owned courses appear in the library (e.g. on a fresh device).
+  final lib = ref.read(coursesProvider).value ?? const [];
+  final have = lib.map((c) => c.id).toSet();
+  final missing = ent.owned.where((id) => !have.contains(id)).toList();
+  if (missing.isNotEmpty) {
+    final listings =
+        (await api.publishedCourses()).map(PublishedListing.fromMap).toList();
+    for (final id in missing) {
+      final match = listings.where((l) => l.course.id == id);
+      if (match.isNotEmpty) {
+        final owned = match.first.ownedCopy();
+        await ref.read(coursesProvider.notifier).addCourse(owned);
+        await ref.read(progressProvider.notifier).enroll(owned.id);
+      }
+    }
+  }
 }
 
 // ---- Admin review ------------------------------------------------------

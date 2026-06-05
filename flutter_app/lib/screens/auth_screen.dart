@@ -56,6 +56,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     if (!mounted) return;
     setState(() => _googleBusy = false);
     if (err == null) {
+      await syncEntitlements(ref, claim: true); // claim guest purchases/Pro
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Signed in with Google')),
       );
@@ -85,6 +87,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     if (!mounted) return;
     setState(() => _busy = false);
     if (err == null) {
+      await syncEntitlements(ref, claim: true); // claim guest purchases/Pro
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_isLogin ? 'Signed in' : 'Account created')),
       );
