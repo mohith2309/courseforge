@@ -31,8 +31,7 @@ class ApiClient {
 
   // Shared secret gating the AI proxy (matches server APP_KEY). Raises the bar
   // for raw-URL abuse; the per-IP rate limit caps damage either way.
-  static const _appKey = String.fromEnvironment('APP_KEY',
-      defaultValue: 'cfapp_63d2aac1bd27443980dae80524b88a2f475510fb');
+  static const _appKey = String.fromEnvironment('APP_KEY');
 
   // Server-issued bearer token (set by AuthNotifier on sign-in).
   String? _authToken;
