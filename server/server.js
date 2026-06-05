@@ -419,8 +419,11 @@ const server = http.createServer(async (req, res) => {
         if (!idToken) return send(res, req, 400, { error: 'idToken required' });
         const { status, body: info } = await httpsJson(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`, { method: 'GET' });
         if (status !== 200 || !info?.sub) return send(res, req, 401, { error: 'invalid Google token' });
-        const audOk = String(info.aud || '').includes(FIREBASE_PROJECT_NUM) || String(info.azp || '').includes(FIREBASE_PROJECT_NUM);
-        if (!audOk) return send(res, req, 401, { error: 'token audience mismatch' });
+        // Stricter audience check: MUST be exactly the project number or start with it followed by a hyphen
+        // (e.g. 123-abc.apps.googleusercontent.com). Prevents "123" matching "9912399".
+        const check = (a) => a === FIREBASE_PROJECT_NUM || a.startsWith(`${FIREBASE_PROJECT_NUM}-`);
+        if (!check(String(info.aud || '')) && !check(String(info.azp || '')))
+          return send(res, req, 401, { error: 'token audience mismatch' });
         const users = await load('users');
         let user = users.find((u) => u.id === info.sub);
         if (!user) { user = { id: info.sub, email: String(info.email || '').toLowerCase(), name: String(info.name || info.email || 'User').slice(0, 60), verifiedPublisher: false, google: true, createdAt: Date.now() }; users.push(user); await save('users', users); }
@@ -470,15 +473,19 @@ const server = http.createServer(async (req, res) => {
         return send(res, req, 200, { orderId: order.orderId, amount: order.amount, currency: 'INR', keyId: RZP_KEY_ID, mock: order.mock });
       }
       if (m === 'POST' && p === '/payments/verify') {
-        const orders = await load('orders');
+        const [orders, purchases] = [await load('orders'), await load('purchases')];
         const order = orders.find((o) => o.orderId === body.orderId && o.buyerId === uid);
         if (!order) return send(res, req, 400, { error: 'unknown order' });
+
+        // Replay protection: ensure this order hasn't already been fulfilled.
+        if (purchases.some((p) => p.orderId === order.orderId))
+          return send(res, req, 409, { error: 'order already processed' });
+
         const real = RZP_LIVE && !ALLOW_MOCK_PAYMENTS;
         if (real) {
           if (!rzpVerify(body.orderId, body.paymentId, body.signature))
             return send(res, req, 400, { error: 'signature verification failed' });
         } // else: dev/test simulated completion allowed
-        const purchases = await load('purchases');
         purchases.unshift({ id: crypto.randomUUID(), courseId: order.courseId, buyerId: uid, orderId: order.orderId, amountInr: order.amountInr, at: Date.now() });
         await save('purchases', purchases);
         const published = await load('published');
