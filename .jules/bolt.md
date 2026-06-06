@@ -1,0 +1,3 @@
+## 2024-05-15 - Allocation-heavy getters in build loops
+**Learning:** In Flutter, getters that return new lists (like `course.allLessons`) cause O(L) allocations on every call. When used in `build()` methods or frequently called providers (like `completionFor`), this creates significant GC pressure and slows down UI rendering, especially on pages with many courses like the Progress dashboard.
+**Action:** Prefer direct nested iteration through existing collections over convenience getters that allocate new lists. Use O(1) collections like `Set` for frequently queried state (e.g., `activeDays`) to avoid O(N) conversions during calculation.

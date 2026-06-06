@@ -212,7 +212,7 @@ class ProgressNotifier extends StateNotifier<ProgressState> {
   void _markActiveToday() {
     final today = ProgressState.fmtToday();
     if (state.activeDays.contains(today)) return;
-    state = state.copyWith(activeDays: [...state.activeDays, today]);
+    state = state.copyWith(activeDays: {...state.activeDays, today});
   }
 
   Future<void> enroll(String courseId) async {
@@ -301,10 +301,14 @@ class ProgressNotifier extends StateNotifier<ProgressState> {
   /// 0.0–1.0 completion for a course given its lesson list.
   double completionFor(Course course) {
     if (course.totalLessons == 0) return 0;
-    final done = course.allLessons
-        .where((l) => state.completedLessonIds.contains(l.id))
-        .length;
-    return done / course.totalLessons;
+    // Optimization: Iterate directly to avoid O(L) list allocation in .allLessons
+    int doneCount = 0;
+    for (final m in course.modules) {
+      for (final l in m.lessons) {
+        if (state.completedLessonIds.contains(l.id)) doneCount++;
+      }
+    }
+    return doneCount / course.totalLessons;
   }
 }
 

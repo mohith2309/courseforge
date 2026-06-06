@@ -12,7 +12,7 @@ class ProgressState {
   final Set<String> bookmarkedLessonIds;
   final Map<String, String> notes; // lessonId -> note text
   final int timeSpentMinutes;
-  final List<String> activeDays; // ISO yyyy-MM-dd, for streaks
+  final Set<String> activeDays; // ISO yyyy-MM-dd, for streaks
 
   // Gamification.
   final int xp; // lifetime XP
@@ -28,7 +28,7 @@ class ProgressState {
     this.bookmarkedLessonIds = const {},
     this.notes = const {},
     this.timeSpentMinutes = 0,
-    this.activeDays = const [],
+    this.activeDays = const {},
     this.xp = 0,
     this.dailyXp = 0,
     this.dailyXpDay = '',
@@ -43,7 +43,7 @@ class ProgressState {
     Set<String>? bookmarkedLessonIds,
     Map<String, String>? notes,
     int? timeSpentMinutes,
-    List<String>? activeDays,
+    Set<String>? activeDays,
     int? xp,
     int? dailyXp,
     String? dailyXpDay,
@@ -86,15 +86,15 @@ class ProgressState {
   /// Consecutive-day streak ending today (or yesterday).
   int get streak {
     if (activeDays.isEmpty) return 0;
-    final days = activeDays.toSet();
+    // Optimization: activeDays is already a Set, avoid O(N) .toSet() allocation.
     final today = DateTime.now();
     int count = 0;
     // Allow the streak to count if the last active day was today or yesterday.
-    var cursor = days.contains(_fmt(today))
+    var cursor = activeDays.contains(_fmt(today))
         ? today
         : today.subtract(const Duration(days: 1));
-    if (!days.contains(_fmt(cursor))) return 0;
-    while (days.contains(_fmt(cursor))) {
+    if (!activeDays.contains(_fmt(cursor))) return 0;
+    while (activeDays.contains(_fmt(cursor))) {
       count++;
       cursor = cursor.subtract(const Duration(days: 1));
     }
@@ -113,7 +113,7 @@ class ProgressState {
         'bookmarks': bookmarkedLessonIds.toList(),
         'notes': notes,
         'time': timeSpentMinutes,
-        'days': activeDays,
+        'days': activeDays.toList(),
         'xp': xp,
         'dailyXp': dailyXp,
         'dailyXpDay': dailyXpDay,
@@ -137,7 +137,8 @@ class ProgressState {
             ) ??
             const {},
         timeSpentMinutes: (j['time'] as num?)?.toInt() ?? 0,
-        activeDays: (j['days'] as List? ?? const []).cast<String>(),
+        activeDays:
+            (j['days'] as List? ?? const []).cast<String>().toSet(),
         xp: (j['xp'] as num?)?.toInt() ?? 0,
         dailyXp: (j['dailyXp'] as num?)?.toInt() ?? 0,
         dailyXpDay: j['dailyXpDay'] as String? ?? '',

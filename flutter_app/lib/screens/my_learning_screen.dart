@@ -67,8 +67,11 @@ class _BookmarksSection extends ConsumerWidget {
     final marks = ref.watch(progressProvider).bookmarkedLessonIds;
     final entries = <(Course, Lesson)>[];
     for (final c in courses) {
-      for (final l in c.allLessons) {
-        if (marks.contains(l.id)) entries.add((c, l));
+      // Optimization: Iterate modules/lessons directly to avoid O(L) list allocations in .allLessons
+      for (final m in c.modules) {
+        for (final l in m.lessons) {
+          if (marks.contains(l.id)) entries.add((c, l));
+        }
       }
     }
     if (entries.isEmpty) return const SizedBox();
