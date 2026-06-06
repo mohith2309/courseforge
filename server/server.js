@@ -123,6 +123,8 @@ async function fsSave(name, value) {
 const FB_URL = cfg('FIREBASE_DB_URL', '').replace(/\/$/, '');
 const FB_SECRET = cfg('FIREBASE_DB_SECRET', '');
 const USE_RTDB = DATA_BACKEND === 'firebase' && Boolean(FB_URL);
+// In-memory cache for file-based datastore to avoid O(n) disk IO/parsing.
+const _cache = new Map();
 async function load(name) {
   if (USE_FIRESTORE) return fsLoad(name);
   if (USE_RTDB) {
@@ -131,7 +133,12 @@ async function load(name) {
     if (status === 200 && body) return Array.isArray(body) ? body : Object.values(body);
     return [];
   }
-  try { return JSON.parse(fs.readFileSync(path.join(DATA_DIR, `${name}.json`), 'utf8')); } catch { return []; }
+  if (_cache.has(name)) return _cache.get(name);
+  try {
+    const val = JSON.parse(fs.readFileSync(path.join(DATA_DIR, `${name}.json`), 'utf8'));
+    _cache.set(name, val);
+    return val;
+  } catch { return []; }
 }
 async function save(name, value) {
   if (USE_FIRESTORE) return fsSave(name, value);
@@ -140,6 +147,7 @@ async function save(name, value) {
     await httpsJson(`${FB_URL}/${name}.json${auth}`, { method: 'PUT', body: value });
     return;
   }
+  _cache.set(name, value);
   fs.mkdirSync(DATA_DIR, { recursive: true });
   fs.writeFileSync(path.join(DATA_DIR, `${name}.json`), JSON.stringify(value, null, 2));
 }
@@ -295,7 +303,8 @@ function rzpVerify(orderId, paymentId, signature) {
 }
 function hashPw(pw, salt) { return crypto.scryptSync(pw, salt, 32).toString('hex'); }
 function enrich(entry, users) {
-  const u = users.find((x) => x.id === entry.publisherId);
+  // O(1) lookup if users is a Map (standard for bulk), else O(n).
+  const u = users instanceof Map ? users.get(entry.publisherId) : users.find((x) => x.id === entry.publisherId);
   return { ...entry, publisherName: u ? u.name : 'Unknown', publisherVerified: u ? Boolean(u.verifiedPublisher) : false };
 }
 // Whitelist course fields on publish (prevents rating/enrollment spoofing).
@@ -467,7 +476,8 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
     // ── Public catalog (read-only) ──
     if (m === 'GET' && p === '/courses/published') {
       const [published, users] = [await load('published'), await load('users')];
-      return send(res, req, 200, { courses: published.filter((c) => c.status === 'published').map((c) => enrich(c, users)) });
+      const userMap = new Map(users.map((u) => [u.id, u]));
+      return send(res, req, 200, { courses: published.filter((c) => c.status === 'published').map((c) => enrich(c, userMap)) });
     }
 
     // ── Publishing (auth required; publisherId from token) ──
@@ -634,7 +644,8 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
       if (!isAdmin(req, url)) return send(res, req, 401, { error: 'admin token required' });
       if (m === 'GET' && p === '/admin/pending') {
         const [published, users] = [await load('published'), await load('users')];
-        return send(res, req, 200, { courses: published.filter((c) => c.status === 'pending_review').map((c) => enrich(c, users)) });
+        const userMap = new Map(users.map((u) => [u.id, u]));
+        return send(res, req, 200, { courses: published.filter((c) => c.status === 'pending_review').map((c) => enrich(c, userMap)) });
       }
       const body = await readBody(req);
       if (body.__big) return send(res, req, 413, { error: 'payload too large' });
