@@ -599,10 +599,9 @@ Future<void> syncEntitlements(WidgetRef ref, {bool claim = false}) async {
   if (!api.isConfigured || !auth.signedIn) return;
   final prefs = await SharedPreferences.getInstance();
   final localOwned = prefs.getStringList(_ownedKey) ?? <String>[];
-  final localPro = prefs.getBool('courseforge_is_pro_v1') ?? false;
 
   final ent = claim
-      ? await api.claimEntitlements(localOwned, localPro)
+      ? await api.claimEntitlements(localOwned, false)
       : await api.getEntitlements();
   if (ent == null) return;
 
