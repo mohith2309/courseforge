@@ -222,15 +222,6 @@ class ApiClient {
     }
   }
 
-  /// Record Pro on the server (after a confirmed UPI upgrade).
-  Future<void> setProServer() async {
-    try {
-      await http
-          .post(_u('/me/pro'), headers: _authed)
-          .timeout(const Duration(seconds: 12));
-    } catch (_) {/* best effort */}
-  }
-
   /// Save the creator's Razorpay linked account id (acc_…) so their course
   /// sales auto-split to them via Razorpay Route. Returns null on success.
   Future<String?> setPayoutAccount(String accountId) async {
