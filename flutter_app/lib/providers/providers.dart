@@ -212,7 +212,7 @@ class ProgressNotifier extends StateNotifier<ProgressState> {
   void _markActiveToday() {
     final today = ProgressState.fmtToday();
     if (state.activeDays.contains(today)) return;
-    state = state.copyWith(activeDays: [...state.activeDays, today]);
+    state = state.copyWith(activeDays: {...state.activeDays, today});
   }
 
   Future<void> enroll(String courseId) async {
