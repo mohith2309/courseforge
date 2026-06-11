@@ -1,0 +1,1 @@
+- CORS validation relying on `.includes()` on raw `Origin` headers is vulnerable to substring matching bypasses. Always parse the `Origin` header into a URL object and extract its `.origin` property to ensure a strict and normalized comparison against allowed domains.
