@@ -321,7 +321,20 @@ function corsFor(req) {
     'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-admin-token, x-app-key',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   };
-  if (o && ALLOWED_ORIGINS.includes(o)) h['Access-Control-Allow-Origin'] = o;
+  if (o) {
+    if (ALLOWED_ORIGINS.includes('*')) {
+      h['Access-Control-Allow-Origin'] = '*';
+    } else {
+      try {
+        const originUrl = new URL(o).origin;
+        if (ALLOWED_ORIGINS.includes(originUrl)) {
+          h['Access-Control-Allow-Origin'] = originUrl;
+        }
+      } catch (e) {
+        // Invalid origin
+      }
+    }
+  }
   return h;
 }
 function send(res, req, code, obj) { res.writeHead(code, corsFor(req)); res.end(JSON.stringify(obj)); }
@@ -454,7 +467,7 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
         if (!idToken) return send(res, req, 400, { error: 'idToken required' });
         const { status, body: info } = await httpsJson(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`, { method: 'GET' });
         if (status !== 200 || !info?.sub) return send(res, req, 401, { error: 'invalid Google token' });
-        const audOk = String(info.aud || '').includes(FIREBASE_PROJECT_NUM) || String(info.azp || '').includes(FIREBASE_PROJECT_NUM);
+        const audOk = String(info.aud || '').startsWith(FIREBASE_PROJECT_NUM + '-') || String(info.azp || '').startsWith(FIREBASE_PROJECT_NUM + '-');
         if (!audOk) return send(res, req, 401, { error: 'token audience mismatch' });
         const users = await load('users');
         let user = users.find((u) => u.id === info.sub);
