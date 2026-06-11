@@ -140,8 +140,8 @@ async function save(name, value) {
     await httpsJson(`${FB_URL}/${name}.json${auth}`, { method: 'PUT', body: value });
     return;
   }
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-  fs.writeFileSync(path.join(DATA_DIR, `${name}.json`), JSON.stringify(value, null, 2));
+  await fs.promises.mkdir(DATA_DIR, { recursive: true });
+  await fs.promises.writeFile(path.join(DATA_DIR, `${name}.json`), JSON.stringify(value, null, 2));
 }
 
 // ── AI providers ─────────────────────────────────────────────────────────────
