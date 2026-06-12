@@ -204,12 +204,12 @@ class ApiClient {
 
   /// Attach guest purchases / Pro to the signed-in account; returns the merged
   /// authoritative entitlements.
-  Future<Entitlements?> claimEntitlements(List<String> courseIds, bool pro) async {
+  Future<Entitlements?> claimEntitlements(List<String> courseIds) async {
     try {
       final r = await http
           .post(_u('/me/claim'),
               headers: _authed,
-              body: jsonEncode({'courseIds': courseIds, 'pro': pro}))
+              body: jsonEncode({'courseIds': courseIds}))
           .timeout(const Duration(seconds: 15));
       if (r.statusCode != 200) return null;
       final j = jsonDecode(r.body) as Map<String, dynamic>;
@@ -220,15 +220,6 @@ class ApiClient {
     } catch (_) {
       return null;
     }
-  }
-
-  /// Record Pro on the server (after a confirmed UPI upgrade).
-  Future<void> setProServer() async {
-    try {
-      await http
-          .post(_u('/me/pro'), headers: _authed)
-          .timeout(const Duration(seconds: 12));
-    } catch (_) {/* best effort */}
   }
 
   /// Save the creator's Razorpay linked account id (acc_…) so their course
