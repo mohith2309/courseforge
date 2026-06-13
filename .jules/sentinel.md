@@ -1,0 +1,4 @@
+## 2025-02-13 - [Privilege Escalation in Entitlements & Admin Token Exposure]
+**Vulnerability:** The `/me/pro` and `/me/claim` endpoints allowed users to self-assign "Pro" status and claim premium courses by simply sending a request with a `pro: true` flag or any `courseId`, without server-side payment verification. Additionally, the `adminToken` could be passed as a URL query parameter.
+**Learning:** Entitlement logic was partially implemented on the client-side/untrusted input without server-side validation against the ground-truth course database. Sensitive tokens in URLs are prone to leakage via logs and browser history.
+**Prevention:** Always verify entitlements (like "Pro" status or course ownership) against a verified payment record on the server. Remove all support for sensitive credentials in URL parameters; use headers instead.
