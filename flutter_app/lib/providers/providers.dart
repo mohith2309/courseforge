@@ -602,7 +602,7 @@ Future<void> syncEntitlements(WidgetRef ref, {bool claim = false}) async {
   final localPro = prefs.getBool('courseforge_is_pro_v1') ?? false;
 
   final ent = claim
-      ? await api.claimEntitlements(localOwned, localPro)
+      ? await api.claimEntitlements(localOwned)
       : await api.getEntitlements();
   if (ent == null) return;
 
