@@ -257,8 +257,8 @@ function safeEq(a, b) {
   if (!a || !b || a.length !== b.length) return false;
   return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
 }
-const isAdmin = (req, url) =>
-  safeEq(req.headers['x-admin-token'] || url.searchParams.get('adminToken') || '', ADMIN_TOKEN);
+const isAdmin = (req) =>
+  safeEq(req.headers['x-admin-token'] || '', ADMIN_TOKEN);
 
 // Per-IP sliding-window rate limiter (in-memory).
 const buckets = new Map();
@@ -516,35 +516,28 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
       const u = users.find((x) => x.id === uid);
       return send(res, req, 200, { pro: Boolean(u && u.pro), owned });
     }
-    if (m === 'POST' && p === '/me/pro') {
-      const uid = bearer(req);
-      if (!uid) return send(res, req, 401, { error: 'sign in required' });
-      const users = await load('users');
-      const u = users.find((x) => x.id === uid);
-      if (!u) return send(res, req, 404, { error: 'user not found' });
-      u.pro = true; await save('users', users);
-      return send(res, req, 200, { ok: true });
-    }
-    // Guest → sign-in migration: attach courses bought / Pro unlocked while
-    // signed out to the now-signed-in account.
+    // Guest → sign-in migration: attach courses bought while signed out to the
+    // now-signed-in account. Only allows claiming free courses.
     if (m === 'POST' && p === '/me/claim') {
       const uid = bearer(req);
       if (!uid) return send(res, req, 401, { error: 'sign in required' });
       const body = await readBody(req);
       if (body.__big) return send(res, req, 413, { error: 'payload too large' });
       const ids = Array.isArray(body.courseIds) ? body.courseIds.map(String).slice(0, 200) : [];
-      const purchases = await load('purchases');
+      const [purchases, published] = [await load('purchases'), await load('published')];
       const have = new Set(purchases.filter((x) => x.buyerId === uid).map((x) => x.courseId));
       let added = 0;
       for (const cid of ids) {
-        if (!have.has(cid)) { purchases.unshift({ id: crypto.randomUUID(), courseId: cid, buyerId: uid, claimed: true, at: Date.now() }); have.add(cid); added++; }
+        if (!have.has(cid)) {
+          const course = published.find((c) => c.id === cid);
+          if (course && (course.priceInr === 0 || course.priceInr === undefined)) {
+            purchases.unshift({ id: crypto.randomUUID(), courseId: cid, buyerId: uid, claimed: true, at: Date.now() });
+            have.add(cid);
+            added++;
+          }
+        }
       }
       if (added) await save('purchases', purchases);
-      if (body.pro === true) {
-        const users = await load('users');
-        const u = users.find((x) => x.id === uid);
-        if (u) { u.pro = true; await save('users', users); }
-      }
       const owned = [...have];
       const u2 = (await load('users')).find((x) => x.id === uid);
       return send(res, req, 200, { ok: true, owned, pro: Boolean(u2 && u2.pro) });
@@ -631,7 +624,7 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
     // ── Admin ──
     if (p.startsWith('/admin/')) {
       if (PROD && ADMIN_TOKEN === 'admin-dev') return send(res, req, 503, { error: 'admin disabled: set a strong ADMIN_TOKEN' });
-      if (!isAdmin(req, url)) return send(res, req, 401, { error: 'admin token required' });
+      if (!isAdmin(req)) return send(res, req, 401, { error: 'admin token required' });
       if (m === 'GET' && p === '/admin/pending') {
         const [published, users] = [await load('published'), await load('users')];
         return send(res, req, 200, { courses: published.filter((c) => c.status === 'pending_review').map((c) => enrich(c, users)) });
