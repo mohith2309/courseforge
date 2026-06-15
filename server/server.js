@@ -359,6 +359,8 @@ const server = http.createServer(async (req, res) => {
 
     // ── AI (APP_KEY gate + tight rate limit) ──
     if (p.startsWith('/ai/')) {
+      // Fail closed: in production, APP_KEY MUST be set.
+      if (PROD && !APP_KEY) return send(res, req, 401, { error: 'app key not configured' });
       if (APP_KEY && !safeEq(req.headers['x-app-key'] || '', APP_KEY))
         return send(res, req, 401, { error: 'app key required' });
       // Diagnostic: probe each provider from inside the server (not rate-limited).
@@ -454,7 +456,11 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
         if (!idToken) return send(res, req, 400, { error: 'idToken required' });
         const { status, body: info } = await httpsJson(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`, { method: 'GET' });
         if (status !== 200 || !info?.sub) return send(res, req, 401, { error: 'invalid Google token' });
-        const audOk = String(info.aud || '').includes(FIREBASE_PROJECT_NUM) || String(info.azp || '').includes(FIREBASE_PROJECT_NUM);
+        // Strict audience check: MUST be exactly the project num OR start with it
+        // followed by a hyphen (standard for Google client IDs). Prevents
+        // tokens from other projects that happen to share a substring of ours.
+        const checkAud = (a) => a === FIREBASE_PROJECT_NUM || a.startsWith(`${FIREBASE_PROJECT_NUM}-`);
+        const audOk = checkAud(String(info.aud || '')) || checkAud(String(info.azp || ''));
         if (!audOk) return send(res, req, 401, { error: 'token audience mismatch' });
         const users = await load('users');
         let user = users.find((u) => u.id === info.sub);
@@ -595,6 +601,9 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
         return send(res, req, 200, { orderId: order.orderId, amount: order.amount, currency: 'INR', keyId: RZP_KEY_ID, mock: order.mock });
       }
       if (m === 'POST' && p === '/payments/verify') {
+        // Fail closed: in production, real verification is mandatory.
+        if (PROD && !RZP_LIVE && !ALLOW_MOCK_PAYMENTS)
+          return send(res, req, 503, { error: 'payment verification unavailable' });
         const orders = await load('orders');
         const order = orders.find((o) => o.orderId === body.orderId && o.buyerId === uid);
         if (!order) return send(res, req, 400, { error: 'unknown order' });
