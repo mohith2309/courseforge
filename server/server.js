@@ -258,7 +258,7 @@ function safeEq(a, b) {
   return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
 }
 const isAdmin = (req, url) =>
-  safeEq(req.headers['x-admin-token'] || url.searchParams.get('adminToken') || '', ADMIN_TOKEN);
+  safeEq(req.headers['x-admin-token'] || '', ADMIN_TOKEN);
 
 // Per-IP sliding-window rate limiter (in-memory).
 const buckets = new Map();
@@ -516,15 +516,6 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
       const u = users.find((x) => x.id === uid);
       return send(res, req, 200, { pro: Boolean(u && u.pro), owned });
     }
-    if (m === 'POST' && p === '/me/pro') {
-      const uid = bearer(req);
-      if (!uid) return send(res, req, 401, { error: 'sign in required' });
-      const users = await load('users');
-      const u = users.find((x) => x.id === uid);
-      if (!u) return send(res, req, 404, { error: 'user not found' });
-      u.pro = true; await save('users', users);
-      return send(res, req, 200, { ok: true });
-    }
     // Guest → sign-in migration: attach courses bought / Pro unlocked while
     // signed out to the now-signed-in account.
     if (m === 'POST' && p === '/me/claim') {
@@ -533,21 +524,22 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
       const body = await readBody(req);
       if (body.__big) return send(res, req, 413, { error: 'payload too large' });
       const ids = Array.isArray(body.courseIds) ? body.courseIds.map(String).slice(0, 200) : [];
-      const purchases = await load('purchases');
+      const [purchases, published] = [await load('purchases'), await load('published')];
       const have = new Set(purchases.filter((x) => x.buyerId === uid).map((x) => x.courseId));
       let added = 0;
       for (const cid of ids) {
-        if (!have.has(cid)) { purchases.unshift({ id: crypto.randomUUID(), courseId: cid, buyerId: uid, claimed: true, at: Date.now() }); have.add(cid); added++; }
+        if (!have.has(cid)) {
+          // Security: only allow claiming courses that are actually free.
+          const c = published.find((x) => x.id === cid && x.status === 'published');
+          if (c && c.priceInr === 0) {
+            purchases.unshift({ id: crypto.randomUUID(), courseId: cid, buyerId: uid, claimed: true, at: Date.now() });
+            have.add(cid); added++;
+          }
+        }
       }
       if (added) await save('purchases', purchases);
-      if (body.pro === true) {
-        const users = await load('users');
-        const u = users.find((x) => x.id === uid);
-        if (u) { u.pro = true; await save('users', users); }
-      }
-      const owned = [...have];
-      const u2 = (await load('users')).find((x) => x.id === uid);
-      return send(res, req, 200, { ok: true, owned, pro: Boolean(u2 && u2.pro) });
+      const u = (await load('users')).find((x) => x.id === uid);
+      return send(res, req, 200, { ok: true, owned: [...have], pro: Boolean(u && u.pro) });
     }
 
     // ── Payments ──
