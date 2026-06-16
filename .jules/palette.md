@@ -1,0 +1,3 @@
+## 2024-06-16 - Dynamic Tooltips for IconButtons
+**Learning:** For `IconButton` widgets with dynamic icons (like play/pause), the `tooltip` property must be bound to the exact same state variable as the icon to ensure semantic correctness and accessibility. Without a dynamically updating tooltip, screen reader labels and hover text become disconnected from the visual state.
+**Action:** Always map the `tooltip` text directly to the state variable driving the visual icon using a ternary operator (e.g. `tooltip: isPlaying ? 'Pause' : 'Play'`) to keep accessibility labels synchronously updated with the UI state.
