@@ -1,0 +1,4 @@
+## 2024-06-17 - Optimize bulk course enrichment
+
+**Learning:** Bulk course enrichment using `Array.find()` inside `map()` creates an $O(N \times M)$ complexity bottleneck (where N is courses and M is users). This is particularly impactful in catalog and admin pending endpoints where both arrays can grow large.
+**Action:** Convert the lookup array into a `Map` before the loop and use `Map.get()` to reduce complexity to $O(N + M)$ with $O(1)$ lookups. Update the enrichment function to support both `Map` (for bulk operations) and `Array` (for single items to avoid unnecessary allocation overhead).
