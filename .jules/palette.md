@@ -1,0 +1,3 @@
+## 2024-06-18 - Dynamic Tooltips for State-Driven Icons
+**Learning:** Icon-only buttons with dynamic states (e.g., play/pause, mute/unmute) must have their accessibility labels (tooltips) update synchronously with the visual icon. Static tooltips on dynamic icons lead to confusing experiences for screen readers and hover states.
+**Action:** When implementing an `IconButton` where the `icon` property uses a ternary operator based on state, immediately apply the same ternary logic to the `tooltip` property to ensure the accessibility label always matches the visual state.
