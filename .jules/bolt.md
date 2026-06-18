@@ -1,0 +1,3 @@
+## 2026-06-18 - Optimize course enrichment with Map lookups
+**Learning:** Performing `Array.find()` inside a `map()` loop creates $O(N \times M)$ complexity, which significantly slows down bulk course listing endpoints as the number of users and courses grows. Converting the lookup array into a `Map` before the loop reduces complexity to $O(N + M)$ with $O(1)$ lookups.
+**Action:** Always use a `Map` for lookups when processing lists in bulk. In `server/server.js`, the `enrich` function was updated to support both `Map` and `Array` to maintain backward compatibility while allowing high-performance bulk operations.
