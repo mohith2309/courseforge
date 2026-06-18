@@ -359,7 +359,8 @@ const server = http.createServer(async (req, res) => {
 
     // ── AI (APP_KEY gate + tight rate limit) ──
     if (p.startsWith('/ai/')) {
-      if (APP_KEY && !safeEq(req.headers['x-app-key'] || '', APP_KEY))
+      // Fail closed: always require a valid app key for AI endpoints.
+      if (!APP_KEY || !safeEq(req.headers['x-app-key'] || '', APP_KEY))
         return send(res, req, 401, { error: 'app key required' });
       // Diagnostic: probe each provider from inside the server (not rate-limited).
       if (p === '/ai/diag') {
@@ -454,7 +455,9 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
         if (!idToken) return send(res, req, 400, { error: 'idToken required' });
         const { status, body: info } = await httpsJson(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`, { method: 'GET' });
         if (status !== 200 || !info?.sub) return send(res, req, 401, { error: 'invalid Google token' });
-        const audOk = String(info.aud || '').includes(FIREBASE_PROJECT_NUM) || String(info.azp || '').includes(FIREBASE_PROJECT_NUM);
+        // Strict audience check: must exactly match or be a hyphenated client ID starting with our project number.
+        const isTarget = (a) => String(a) === String(FIREBASE_PROJECT_NUM) || String(a).startsWith(`${FIREBASE_PROJECT_NUM}-`);
+        const audOk = isTarget(info.aud) || isTarget(info.azp);
         if (!audOk) return send(res, req, 401, { error: 'token audience mismatch' });
         const users = await load('users');
         let user = users.find((u) => u.id === info.sub);
