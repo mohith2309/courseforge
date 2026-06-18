@@ -454,7 +454,9 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
         if (!idToken) return send(res, req, 400, { error: 'idToken required' });
         const { status, body: info } = await httpsJson(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`, { method: 'GET' });
         if (status !== 200 || !info?.sub) return send(res, req, 401, { error: 'invalid Google token' });
-        const audOk = String(info.aud || '').includes(FIREBASE_PROJECT_NUM) || String(info.azp || '').includes(FIREBASE_PROJECT_NUM);
+        // Strict audience check: must be the project number exactly or the full client ID.
+        const audOk = [info.aud, info.azp].some((v) =>
+          v === FIREBASE_PROJECT_NUM || (v && v.startsWith(`${FIREBASE_PROJECT_NUM}-`)));
         if (!audOk) return send(res, req, 401, { error: 'token audience mismatch' });
         const users = await load('users');
         let user = users.find((u) => u.id === info.sub);
