@@ -1,0 +1,3 @@
+## 2024-05-24 - O(C*U) complexity bottleneck in enrich function
+**Learning:** The bulk enrichment endpoints (`/courses/published`, `/admin/pending`) map over a list of courses and invoke `enrich(course, users)`. When `users` is passed as an array, `enrich` uses `.find()` to look up the publisher, resulting in an O(C * U) complexity bottleneck. This is a recurring regression.
+**Action:** Convert the `users` array to a `Map` before the `courses.map` loop in bulk enrichment endpoints. Update the `enrich` function to use `instanceof Map` to perform O(1) `.get()` lookups instead of `.find()`, bringing the overall complexity down to O(C + U).
