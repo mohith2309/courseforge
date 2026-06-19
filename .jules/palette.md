@@ -1,0 +1,3 @@
+## 2024-06-19 - Map tooltips directly to dynamic state variables for IconButton
+**Learning:** For dynamic icon buttons (like play/pause toggles), standardizing accessibility means ensuring the `tooltip` directly mirrors the state variable driving the icon's visual (e.g., `tooltip: playing ? 'Pause' : 'Play'`). This prevents screen readers from receiving stale or static descriptions when the icon fundamentally changes its purpose mid-interaction.
+**Action:** Always map the `tooltip` property to the same state/variable driving the `Icon` property using a ternary operator for any toggle-based `IconButton`.
