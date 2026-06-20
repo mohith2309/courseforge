@@ -257,8 +257,8 @@ function safeEq(a, b) {
   if (!a || !b || a.length !== b.length) return false;
   return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
 }
-const isAdmin = (req, url) =>
-  safeEq(req.headers['x-admin-token'] || url.searchParams.get('adminToken') || '', ADMIN_TOKEN);
+const isAdmin = (req) =>
+  safeEq(req.headers['x-admin-token'] || '', ADMIN_TOKEN);
 
 // Per-IP sliding-window rate limiter (in-memory).
 const buckets = new Map();
@@ -631,7 +631,7 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
     // ── Admin ──
     if (p.startsWith('/admin/')) {
       if (PROD && ADMIN_TOKEN === 'admin-dev') return send(res, req, 503, { error: 'admin disabled: set a strong ADMIN_TOKEN' });
-      if (!isAdmin(req, url)) return send(res, req, 401, { error: 'admin token required' });
+      if (!isAdmin(req)) return send(res, req, 401, { error: 'admin token required' });
       if (m === 'GET' && p === '/admin/pending') {
         const [published, users] = [await load('published'), await load('users')];
         return send(res, req, 200, { courses: published.filter((c) => c.status === 'pending_review').map((c) => enrich(c, users)) });
