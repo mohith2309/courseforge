@@ -257,8 +257,9 @@ function safeEq(a, b) {
   if (!a || !b || a.length !== b.length) return false;
   return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
 }
+// Ensure admin token is strictly passed via header (prevents leakage in logs, history, and referer)
 const isAdmin = (req, url) =>
-  safeEq(req.headers['x-admin-token'] || url.searchParams.get('adminToken') || '', ADMIN_TOKEN);
+  safeEq(req.headers['x-admin-token'] || '', ADMIN_TOKEN);
 
 // Per-IP sliding-window rate limiter (in-memory).
 const buckets = new Map();
