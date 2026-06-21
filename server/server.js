@@ -46,6 +46,9 @@ const RZP_LIVE = Boolean(RZP_KEY_ID && RZP_KEY_SECRET);
 const ALLOW_MOCK_PAYMENTS = cfg('ALLOW_MOCK_PAYMENTS', 'false') === 'true';
 const ADMIN_TOKEN = cfg('ADMIN_TOKEN', 'admin-dev');
 const JWT_SECRET = cfg('JWT_SECRET', 'dev-secret');
+if (PROD && (ADMIN_TOKEN === 'admin-dev' || JWT_SECRET === 'dev-secret')) {
+  throw new Error('CRITICAL SECURITY CONFIG: Refusing to start in production with default secrets. Set ADMIN_TOKEN and JWT_SECRET.');
+}
 const APP_KEY = cfg('APP_KEY'); // gate for AI endpoints
 const FIREBASE_PROJECT_NUM = cfg('FIREBASE_PROJECT_NUM', '374206849691');
 const ALLOWED_ORIGINS = cfg('ALLOWED_ORIGINS', '')
