@@ -294,8 +294,10 @@ function rzpVerify(orderId, paymentId, signature) {
   return safeEq(expected, signature || '');
 }
 function hashPw(pw, salt) { return crypto.scryptSync(pw, salt, 32).toString('hex'); }
+// Optimized for O(1) lookups when users is a Map (common in bulk endpoints),
+// but remains compatible with O(N) array search for backward compatibility.
 function enrich(entry, users) {
-  const u = users.find((x) => x.id === entry.publisherId);
+  const u = users instanceof Map ? users.get(entry.publisherId) : users.find((x) => x.id === entry.publisherId);
   return { ...entry, publisherName: u ? u.name : 'Unknown', publisherVerified: u ? Boolean(u.verifiedPublisher) : false };
 }
 // Whitelist course fields on publish (prevents rating/enrollment spoofing).
@@ -467,7 +469,9 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
     // ── Public catalog (read-only) ──
     if (m === 'GET' && p === '/courses/published') {
       const [published, users] = [await load('published'), await load('users')];
-      return send(res, req, 200, { courses: published.filter((c) => c.status === 'published').map((c) => enrich(c, users)) });
+      // Performance: Pre-instantiate a Map to optimize enrichment from O(C*U) to O(C+U).
+      const userMap = new Map(users.map((u) => [u.id, u]));
+      return send(res, req, 200, { courses: published.filter((c) => c.status === 'published').map((c) => enrich(c, userMap)) });
     }
 
     // ── Publishing (auth required; publisherId from token) ──
@@ -634,7 +638,9 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
       if (!isAdmin(req, url)) return send(res, req, 401, { error: 'admin token required' });
       if (m === 'GET' && p === '/admin/pending') {
         const [published, users] = [await load('published'), await load('users')];
-        return send(res, req, 200, { courses: published.filter((c) => c.status === 'pending_review').map((c) => enrich(c, users)) });
+        // Performance: Pre-instantiate a Map to optimize enrichment from O(C*U) to O(C+U).
+        const userMap = new Map(users.map((u) => [u.id, u]));
+        return send(res, req, 200, { courses: published.filter((c) => c.status === 'pending_review').map((c) => enrich(c, userMap)) });
       }
       const body = await readBody(req);
       if (body.__big) return send(res, req, 413, { error: 'payload too large' });
@@ -663,8 +669,14 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
   }
 });
 
-server.listen(PORT, () => {
-  console.log(`CourseForge backend on :${PORT} (hardened)`);
-  console.log(`  store:${USE_FIRESTORE ? ' firestore' : USE_RTDB ? ' rtdb' : ' file'} | groq:${GROQ_LIVE} | razorpay:${RZP_LIVE} | mockPay:${ALLOW_MOCK_PAYMENTS}`);
-  console.log(`  appKeyGate:${Boolean(APP_KEY)} | corsAllow:[${ALLOWED_ORIGINS.join(',')}] | admin:${ADMIN_TOKEN === 'admin-dev' ? 'WEAK-DEFAULT' : 'set'} | prod:${PROD}`);
-});
+if (process.env.NODE_ENV !== 'test') {
+  server.listen(PORT, () => {
+    console.log(`CourseForge backend on :${PORT} (hardened)`);
+    console.log(`  store:${USE_FIRESTORE ? ' firestore' : USE_RTDB ? ' rtdb' : ' file'} | groq:${GROQ_LIVE} | razorpay:${RZP_LIVE} | mockPay:${ALLOW_MOCK_PAYMENTS}`);
+    console.log(`  appKeyGate:${Boolean(APP_KEY)} | corsAllow:[${ALLOWED_ORIGINS.join(',')}] | admin:${ADMIN_TOKEN === 'admin-dev' ? 'WEAK-DEFAULT' : 'set'} | prod:${PROD}`);
+  });
+}
+
+if (process.env.NODE_ENV === 'test') {
+  module.exports = { enrich };
+}
