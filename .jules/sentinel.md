@@ -1,0 +1,4 @@
+## 2025-02-14 - Default secrets in production
+**Vulnerability:** The application was allowing the server to boot up with `NODE_ENV=production` while relying on the insecure, default `JWT_SECRET` ('dev-secret') and `ADMIN_TOKEN` ('admin-dev'), which would allow critical token forgery and admin bypass.
+**Learning:** Hardcoded fallback values for secrets make local development easier but present a massive risk if not explicitly gated off in production. A production check for the admin endpoint existed, but `JWT_SECRET` had no global startup fail-closed mechanism.
+**Prevention:** Always implement a strict fail-closed check at application initialization: if `NODE_ENV=production`, explicitly verify that all critical secrets are not set to their development defaults and abort startup immediately if they are.
