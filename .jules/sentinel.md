@@ -1,0 +1,4 @@
+## 2025-05-14 - Remediate fail-open AI gate and admin token leakage
+**Vulnerability:** The `/ai/` route implementation allowed access when the `APP_KEY` was missing from the environment (fail-open). Additionally, the `isAdmin` check permitted the administrative token to be passed via a URL query parameter (`adminToken`).
+**Learning:** Security gates must implement a fail-closed design where the absence of a configuration secret results in denied access. Sensitive tokens should never be accepted via URL parameters to prevent leakage in server logs, browser history, and HTTP referer headers.
+**Prevention:** Always verify that environment-based security gates require the variable to be present and non-empty. Enforce token transmission via custom headers (e.g., `x-admin-token`) and remove fallback query parameter checks.
