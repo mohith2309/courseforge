@@ -1,0 +1,4 @@
+## 2025-06-22 - Admin Token Leakage and Production Default Secrets
+**Vulnerability:** The admin token was being accepted as a URL query parameter (`adminToken`), which can lead to it being leaked in server logs, browser history, and HTTP referer headers. Additionally, the server would start in `NODE_ENV=production` even if critical secrets (`ADMIN_TOKEN`, `JWT_SECRET`) were still set to their development defaults.
+**Learning:** Security gates should not accept sensitive tokens via URL parameters. Furthermore, a "fail-closed" approach is necessary for production environments to prevent accidental deployment with insecure default configurations.
+**Prevention:** Always enforce tokens via custom headers (e.g., `x-admin-token`) and implement a strict startup check that aborts execution if critical security environment variables are missing or insecure in production.

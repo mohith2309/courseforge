@@ -258,7 +258,7 @@ function safeEq(a, b) {
   return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
 }
 const isAdmin = (req, url) =>
-  safeEq(req.headers['x-admin-token'] || url.searchParams.get('adminToken') || '', ADMIN_TOKEN);
+  safeEq(req.headers['x-admin-token'] || '', ADMIN_TOKEN);
 
 // Per-IP sliding-window rate limiter (in-memory).
 const buckets = new Map();
@@ -338,6 +338,12 @@ function readBody(req) {
     req.on('end', () => { try { finish(b ? JSON.parse(b) : {}); } catch { finish({}); } });
     req.on('error', () => finish({}));
   });
+}
+
+if (PROD && (ADMIN_TOKEN === 'admin-dev' || JWT_SECRET === 'dev-secret')) {
+  console.error('FATAL: Default secrets detected in production.');
+  console.error('Set strong ADMIN_TOKEN and JWT_SECRET environment variables.');
+  process.exit(1);
 }
 
 const server = http.createServer(async (req, res) => {
