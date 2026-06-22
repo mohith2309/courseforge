@@ -47,6 +47,15 @@ const ALLOW_MOCK_PAYMENTS = cfg('ALLOW_MOCK_PAYMENTS', 'false') === 'true';
 const ADMIN_TOKEN = cfg('ADMIN_TOKEN', 'admin-dev');
 const JWT_SECRET = cfg('JWT_SECRET', 'dev-secret');
 const APP_KEY = cfg('APP_KEY'); // gate for AI endpoints
+
+// FAIL-CLOSED SECURITY CHECK
+// In production, if secrets remain at their default values, abort startup.
+// This prevents token forgery and unauthorized admin access.
+if (PROD && (ADMIN_TOKEN === 'admin-dev' || JWT_SECRET === 'dev-secret')) {
+  console.error('[FATAL] Security check failed: ADMIN_TOKEN and JWT_SECRET must be set in production.');
+  process.exit(1);
+}
+
 const FIREBASE_PROJECT_NUM = cfg('FIREBASE_PROJECT_NUM', '374206849691');
 const ALLOWED_ORIGINS = cfg('ALLOWED_ORIGINS', '')
   .split(',').map((s) => s.trim()).filter(Boolean);
@@ -257,8 +266,10 @@ function safeEq(a, b) {
   if (!a || !b || a.length !== b.length) return false;
   return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
 }
+// Ensure the admin token is passed strictly via headers.
+// Rejecting query parameter fallback prevents leakage in server logs and Referer headers.
 const isAdmin = (req, url) =>
-  safeEq(req.headers['x-admin-token'] || url.searchParams.get('adminToken') || '', ADMIN_TOKEN);
+  safeEq(req.headers['x-admin-token'] || '', ADMIN_TOKEN);
 
 // Per-IP sliding-window rate limiter (in-memory).
 const buckets = new Map();
@@ -663,8 +674,14 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
   }
 });
 
-server.listen(PORT, () => {
-  console.log(`CourseForge backend on :${PORT} (hardened)`);
-  console.log(`  store:${USE_FIRESTORE ? ' firestore' : USE_RTDB ? ' rtdb' : ' file'} | groq:${GROQ_LIVE} | razorpay:${RZP_LIVE} | mockPay:${ALLOW_MOCK_PAYMENTS}`);
-  console.log(`  appKeyGate:${Boolean(APP_KEY)} | corsAllow:[${ALLOWED_ORIGINS.join(',')}] | admin:${ADMIN_TOKEN === 'admin-dev' ? 'WEAK-DEFAULT' : 'set'} | prod:${PROD}`);
-});
+if (process.env.NODE_ENV !== 'test') {
+  server.listen(PORT, () => {
+    console.log(`CourseForge backend on :${PORT} (hardened)`);
+    console.log(`  store:${USE_FIRESTORE ? ' firestore' : USE_RTDB ? ' rtdb' : ' file'} | groq:${GROQ_LIVE} | razorpay:${RZP_LIVE} | mockPay:${ALLOW_MOCK_PAYMENTS}`);
+    console.log(`  appKeyGate:${Boolean(APP_KEY)} | corsAllow:[${ALLOWED_ORIGINS.join(',')}] | admin:${ADMIN_TOKEN === 'admin-dev' ? 'WEAK-DEFAULT' : 'set'} | prod:${PROD}`);
+  });
+}
+
+if (process.env.NODE_ENV === 'test') {
+  module.exports = { isAdmin, safeEq, verifyToken, signToken, enrich, server };
+}
