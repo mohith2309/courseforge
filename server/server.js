@@ -258,7 +258,7 @@ function safeEq(a, b) {
   return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
 }
 const isAdmin = (req, url) =>
-  safeEq(req.headers['x-admin-token'] || url.searchParams.get('adminToken') || '', ADMIN_TOKEN);
+  safeEq(req.headers['x-admin-token'] || '', ADMIN_TOKEN);
 
 // Per-IP sliding-window rate limiter (in-memory).
 const buckets = new Map();
@@ -340,6 +340,17 @@ function readBody(req) {
   });
 }
 
+if (PROD) {
+  if (JWT_SECRET === 'dev-secret') {
+    console.error('[CRITICAL] Production JWT_SECRET is set to development default. Aborting.');
+    process.exit(1);
+  }
+  if (ADMIN_TOKEN === 'admin-dev') {
+    console.error('[CRITICAL] Production ADMIN_TOKEN is set to development default. Aborting.');
+    process.exit(1);
+  }
+}
+
 const server = http.createServer(async (req, res) => {
   if (req.method === 'OPTIONS') return send(res, req, 204, {});
   const url = new URL(req.url, 'http://localhost');
@@ -359,7 +370,7 @@ const server = http.createServer(async (req, res) => {
 
     // ── AI (APP_KEY gate + tight rate limit) ──
     if (p.startsWith('/ai/')) {
-      if (APP_KEY && !safeEq(req.headers['x-app-key'] || '', APP_KEY))
+      if (!APP_KEY || !safeEq(req.headers['x-app-key'] || '', APP_KEY))
         return send(res, req, 401, { error: 'app key required' });
       // Diagnostic: probe each provider from inside the server (not rate-limited).
       if (p === '/ai/diag') {
