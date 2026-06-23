@@ -1,0 +1,5 @@
+
+## 2024-05-18 - Fix Authorization Bypass and Token Leakage Regressions
+**Vulnerability:** The application was failing open on the `/ai/` endpoint when the `APP_KEY` was missing, and the `/admin/` endpoint allowed the `ADMIN_TOKEN` to be passed via URL query parameters, potentially leading to token leakage in referer headers or server logs. Additionally, default credentials were inadvertently permitted to start the server in a production environment.
+**Learning:** Security gates previously implemented were likely lost or reverted, highlighting a critical regression where fail-closed paradigms were relaxed, and URL parameters were added back as a fallback mechanism for secret transmission.
+**Prevention:** Always enforce strict "fail-closed" logic for missing credentials/keys. Never allow secrets to be transmitted via URL parameters; rely exclusively on HTTP headers. Add explicit checks during server initialization to immediately abort if default or weak credentials are detected in production.

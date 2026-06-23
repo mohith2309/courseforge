@@ -55,6 +55,11 @@ const COMMISSION = 0.3;
 const PLATFORM_OWNER_ID = cfg('PLATFORM_OWNER_ID', '');
 const MAX_BODY = 512 * 1024; // 512 KB
 
+if (PROD && (ADMIN_TOKEN === 'admin-dev' || JWT_SECRET === 'dev-secret')) {
+  console.error('FATAL: Refusing to start in production with default secrets.');
+  process.exit(1);
+}
+
 // ── HTTPS JSON helper ────────────────────────────────────────────────────────
 function httpsJson(url, { method = 'POST', headers = {}, body, timeoutMs = 45000 } = {}) {
   return new Promise((resolve, reject) => {
@@ -258,7 +263,7 @@ function safeEq(a, b) {
   return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
 }
 const isAdmin = (req, url) =>
-  safeEq(req.headers['x-admin-token'] || url.searchParams.get('adminToken') || '', ADMIN_TOKEN);
+  safeEq(req.headers['x-admin-token'] || '', ADMIN_TOKEN);
 
 // Per-IP sliding-window rate limiter (in-memory).
 const buckets = new Map();
@@ -359,7 +364,7 @@ const server = http.createServer(async (req, res) => {
 
     // ── AI (APP_KEY gate + tight rate limit) ──
     if (p.startsWith('/ai/')) {
-      if (APP_KEY && !safeEq(req.headers['x-app-key'] || '', APP_KEY))
+      if (!APP_KEY || !safeEq(req.headers['x-app-key'] || '', APP_KEY))
         return send(res, req, 401, { error: 'app key required' });
       // Diagnostic: probe each provider from inside the server (not rate-limited).
       if (p === '/ai/diag') {
@@ -663,8 +668,12 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
   }
 });
 
-server.listen(PORT, () => {
-  console.log(`CourseForge backend on :${PORT} (hardened)`);
-  console.log(`  store:${USE_FIRESTORE ? ' firestore' : USE_RTDB ? ' rtdb' : ' file'} | groq:${GROQ_LIVE} | razorpay:${RZP_LIVE} | mockPay:${ALLOW_MOCK_PAYMENTS}`);
-  console.log(`  appKeyGate:${Boolean(APP_KEY)} | corsAllow:[${ALLOWED_ORIGINS.join(',')}] | admin:${ADMIN_TOKEN === 'admin-dev' ? 'WEAK-DEFAULT' : 'set'} | prod:${PROD}`);
-});
+if (process.env.NODE_ENV !== 'test') {
+  server.listen(PORT, () => {
+    console.log(`CourseForge backend on :${PORT} (hardened)`);
+    console.log(`  store:${USE_FIRESTORE ? ' firestore' : USE_RTDB ? ' rtdb' : ' file'} | groq:${GROQ_LIVE} | razorpay:${RZP_LIVE} | mockPay:${ALLOW_MOCK_PAYMENTS}`);
+    console.log(`  appKeyGate:${Boolean(APP_KEY)} | corsAllow:[${ALLOWED_ORIGINS.join(',')}] | admin:${ADMIN_TOKEN === 'admin-dev' ? 'WEAK-DEFAULT' : 'set'} | prod:${PROD}`);
+  });
+} else {
+  module.exports = { server, enrich, isAdmin, cleanCourse, parseLooseJson, load, save };
+}
