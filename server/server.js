@@ -25,6 +25,17 @@ const cfg = (k, d = '') => process.env[k] || ENV[k] || d;
 
 const PORT = cfg('PORT', '8788');
 const PROD = cfg('NODE_ENV') === 'production';
+
+if (PROD) {
+  if (cfg('JWT_SECRET', 'dev-secret') === 'dev-secret') {
+    console.error('FATAL: JWT_SECRET must be set in production!');
+    process.exit(1);
+  }
+  if (cfg('ADMIN_TOKEN', 'admin-dev') === 'admin-dev') {
+    console.error('FATAL: ADMIN_TOKEN must be set in production!');
+    process.exit(1);
+  }
+}
 const GEMINI_KEY = cfg('GEMINI_API_KEY');
 const GEMINI_MODEL = cfg('GEMINI_MODEL', 'gemini-2.5-flash');
 const NIM_KEY = cfg('NVIDIA_API_KEY');
@@ -254,11 +265,14 @@ function bearer(req) {
   return h.startsWith('Bearer ') ? verifyToken(h.slice(7)) : null;
 }
 function safeEq(a, b) {
-  if (!a || !b || a.length !== b.length) return false;
-  return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
+  if (!a || !b) return false;
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
 }
 const isAdmin = (req, url) =>
-  safeEq(req.headers['x-admin-token'] || url.searchParams.get('adminToken') || '', ADMIN_TOKEN);
+  safeEq(req.headers['x-admin-token'] || '', ADMIN_TOKEN);
 
 // Per-IP sliding-window rate limiter (in-memory).
 const buckets = new Map();
