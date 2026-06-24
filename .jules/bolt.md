@@ -1,0 +1,3 @@
+## 2026-06-24 - Optimize Bulk Course Enrichment Lookups
+**Learning:** Identified a critical O(C * U) performance bottleneck in `GET /courses/published` and `GET /admin/pending` endpoints during bulk enrichment. The `enrich()` function used an `Array.find()` inside a loop over courses.
+**Action:** Replaced O(N) array search with O(1) `Map` lookup by pre-instantiating `users` into a `Map` before enrichment looping. Also modified `enrich()` to support both `Map` and `Array` inputs using `users instanceof Map`. This reduces overall complexity from O(C * U) to O(C + U), avoiding massive slowdowns as user counts scale.
