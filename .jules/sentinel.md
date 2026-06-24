@@ -1,0 +1,4 @@
+## 2025-05-22 - Admin Token Leakage and Insecure Production Defaults
+**Vulnerability:** Sensitive tokens (like `ADMIN_TOKEN`) were accepted via URL query parameters, exposing them to leakage in server logs, browser history, and HTTP `Referer` headers. Additionally, the application allowed starting in production mode while still using development-only default secrets for `ADMIN_TOKEN` and `JWT_SECRET`.
+**Learning:** Security gates should prioritize custom headers over query parameters for sensitive data to prevent incidental leakage. A "fail-closed" design at application initialization is essential to prevent accidentally deploying with insecure, well-known development credentials.
+**Prevention:** Strictly verify administrative tokens via the `x-admin-token` header and remove any query parameter fallbacks. Implement a startup check that aborts the process if `NODE_ENV=production` is detected alongside default development secrets.
