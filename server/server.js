@@ -55,6 +55,13 @@ const COMMISSION = 0.3;
 const PLATFORM_OWNER_ID = cfg('PLATFORM_OWNER_ID', '');
 const MAX_BODY = 512 * 1024; // 512 KB
 
+if (PROD) {
+  if (ADMIN_TOKEN === 'admin-dev' || JWT_SECRET === 'dev-secret') {
+    console.error('FATAL: Refusing to start in production with default secrets.');
+    process.exit(1);
+  }
+}
+
 // ── HTTPS JSON helper ────────────────────────────────────────────────────────
 function httpsJson(url, { method = 'POST', headers = {}, body, timeoutMs = 45000 } = {}) {
   return new Promise((resolve, reject) => {
@@ -258,7 +265,7 @@ function safeEq(a, b) {
   return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
 }
 const isAdmin = (req, url) =>
-  safeEq(req.headers['x-admin-token'] || url.searchParams.get('adminToken') || '', ADMIN_TOKEN);
+  safeEq(req.headers['x-admin-token'] || '', ADMIN_TOKEN);
 
 // Per-IP sliding-window rate limiter (in-memory).
 const buckets = new Map();
@@ -630,7 +637,6 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
 
     // ── Admin ──
     if (p.startsWith('/admin/')) {
-      if (PROD && ADMIN_TOKEN === 'admin-dev') return send(res, req, 503, { error: 'admin disabled: set a strong ADMIN_TOKEN' });
       if (!isAdmin(req, url)) return send(res, req, 401, { error: 'admin token required' });
       if (m === 'GET' && p === '/admin/pending') {
         const [published, users] = [await load('published'), await load('users')];
