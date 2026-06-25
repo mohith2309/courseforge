@@ -254,11 +254,12 @@ function bearer(req) {
   return h.startsWith('Bearer ') ? verifyToken(h.slice(7)) : null;
 }
 function safeEq(a, b) {
-  if (!a || !b || a.length !== b.length) return false;
-  return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
+  if (!a || !b) return false;
+  const bufA = Buffer.from(a), bufB = Buffer.from(b);
+  if (bufA.byteLength !== bufB.byteLength) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
 }
-const isAdmin = (req, url) =>
-  safeEq(req.headers['x-admin-token'] || url.searchParams.get('adminToken') || '', ADMIN_TOKEN);
+const isAdmin = (req) => safeEq(req.headers['x-admin-token'] || '', ADMIN_TOKEN);
 
 // Per-IP sliding-window rate limiter (in-memory).
 const buckets = new Map();
@@ -359,7 +360,7 @@ const server = http.createServer(async (req, res) => {
 
     // ── AI (APP_KEY gate + tight rate limit) ──
     if (p.startsWith('/ai/')) {
-      if (APP_KEY && !safeEq(req.headers['x-app-key'] || '', APP_KEY))
+      if (APP_KEY ? !safeEq(req.headers['x-app-key'] || '', APP_KEY) : PROD)
         return send(res, req, 401, { error: 'app key required' });
       // Diagnostic: probe each provider from inside the server (not rate-limited).
       if (p === '/ai/diag') {
@@ -631,7 +632,7 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
     // ── Admin ──
     if (p.startsWith('/admin/')) {
       if (PROD && ADMIN_TOKEN === 'admin-dev') return send(res, req, 503, { error: 'admin disabled: set a strong ADMIN_TOKEN' });
-      if (!isAdmin(req, url)) return send(res, req, 401, { error: 'admin token required' });
+      if (!isAdmin(req)) return send(res, req, 401, { error: 'admin token required' });
       if (m === 'GET' && p === '/admin/pending') {
         const [published, users] = [await load('published'), await load('users')];
         return send(res, req, 200, { courses: published.filter((c) => c.status === 'pending_review').map((c) => enrich(c, users)) });
@@ -662,6 +663,14 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
     return send(res, req, 500, { error: 'internal error' });
   }
 });
+
+if (PROD) {
+  if (ADMIN_TOKEN === 'admin-dev' || JWT_SECRET === 'dev-secret') {
+    console.error('CRITICAL SECURITY ERROR: Running in production with default secrets.');
+    console.error('Set strong ADMIN_TOKEN and JWT_SECRET environment variables.');
+    process.exit(1);
+  }
+}
 
 server.listen(PORT, () => {
   console.log(`CourseForge backend on :${PORT} (hardened)`);
