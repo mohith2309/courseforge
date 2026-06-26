@@ -1,0 +1,4 @@
+## 2026-06-26 - Fix timing-safe comparison crash and admin token leakage
+**Vulnerability:** The `safeEq` function crashed when comparing strings of the same character length but different byte lengths (e.g., multi-byte characters). Additionally, the `isAdmin` check allowed sensitive admin tokens to be passed via URL query parameters, risking leakage in logs and Referer headers.
+**Learning:** `crypto.timingSafeEqual` in Node.js requires both buffers to have exactly the same `byteLength`, otherwise it throws `ERR_CRYPTO_TIMING_SAFE_EQUAL_LENGTH`. String `.length` is not a reliable measure of byte length for timing-safe comparisons.
+**Prevention:** Always convert strings to Buffers and compare their `byteLength` before calling `crypto.timingSafeEqual`. Never pass sensitive tokens in URL query parameters; use custom headers instead. Implement fail-closed startup checks to prevent deployment with default secrets.
