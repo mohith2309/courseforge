@@ -40,7 +40,8 @@ class _LessonPlayerState extends State<LessonPlayer> {
   int _i = 0;
   bool _playing = true;
   bool _ttsOn = true;
-  bool _suppress = false; // ignore the completion fired by a programmatic stop()
+  bool _suppress =
+      false; // ignore the completion fired by a programmatic stop()
   Timer? _timer;
 
   @override
@@ -62,7 +63,9 @@ class _LessonPlayerState extends State<LessonPlayer> {
       _tts.setErrorHandler((_) {
         // TTS engine hiccup — let the backup timer carry the reel forward.
       });
-    } catch (_) {/* no TTS engine — backup timer still advances */}
+    } catch (_) {
+      /* no TTS engine — backup timer still advances */
+    }
     if (_playing && mounted) _scheduleSlide();
   }
 
@@ -109,7 +112,9 @@ class _LessonPlayerState extends State<LessonPlayer> {
         .toList();
     final out = <String>[];
     for (var i = 0; i < sentences.length; i += 3) {
-      out.add(sentences.sublist(i, (i + 3).clamp(0, sentences.length)).join(' '));
+      out.add(
+        sentences.sublist(i, (i + 3).clamp(0, sentences.length)).join(' '),
+      );
     }
     return out;
   }
@@ -124,7 +129,9 @@ class _LessonPlayerState extends State<LessonPlayer> {
     final words = body.isEmpty ? 1 : body.split(RegExp(r'\s+')).length;
     final secs = (words / 2.3 + 1.8).clamp(3.5, 32.0);
     _timer = Timer(
-        Duration(milliseconds: (secs * 1000).round()), () => _advanceFrom(from));
+      Duration(milliseconds: (secs * 1000).round()),
+      () => _advanceFrom(from),
+    );
 
     _suppress = true;
     try {
@@ -228,13 +235,20 @@ class _LessonPlayerState extends State<LessonPlayer> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.auto_awesome, size: 12, color: Colors.white),
+                          Icon(
+                            Icons.auto_awesome,
+                            size: 12,
+                            color: Colors.white,
+                          ),
                           SizedBox(width: 3),
-                          Text('CourseForge',
-                              style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600)),
+                          Text(
+                            'CourseForge',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -287,14 +301,20 @@ class _LessonPlayerState extends State<LessonPlayer> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(_ttsOn ? Icons.graphic_eq : Icons.subtitles_outlined,
-                  size: 18, color: AppColors.primary),
+              Icon(
+                _ttsOn ? Icons.graphic_eq : Icons.subtitles_outlined,
+                size: 18,
+                color: AppColors.primary,
+              ),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   slide.body,
                   style: TextStyle(
-                      fontSize: 15, height: 1.45, color: context.fg),
+                    fontSize: 15,
+                    height: 1.45,
+                    color: context.fg,
+                  ),
                 ),
               ),
             ],
@@ -315,22 +335,26 @@ class _SlideView extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(slide.kicker,
-            style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.5)),
+        Text(
+          slide.kicker,
+          style: const TextStyle(
+            color: Colors.white70,
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.5,
+          ),
+        ),
         const SizedBox(height: 8),
         Flexible(
           child: SingleChildScrollView(
             child: Text(
               slide.body,
               style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  height: 1.4,
-                  fontWeight: FontWeight.w600),
+                color: Colors.white,
+                fontSize: 18,
+                height: 1.4,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ),
@@ -362,15 +386,20 @@ class _Controls extends StatelessWidget {
         IconButton(
           onPressed: onToggle,
           iconSize: 22,
-          icon: Icon(playing ? Icons.pause : Icons.play_arrow,
-              color: Colors.white),
+          tooltip: playing ? 'Pause' : 'Play',
+          icon: Icon(
+            playing ? Icons.pause : Icons.play_arrow,
+            color: Colors.white,
+          ),
         ),
         IconButton(
           onPressed: onToggleTts,
           iconSize: 20,
           tooltip: ttsOn ? 'Mute narration' : 'Unmute narration',
-          icon: Icon(ttsOn ? Icons.volume_up : Icons.volume_off,
-              color: Colors.white),
+          icon: Icon(
+            ttsOn ? Icons.volume_up : Icons.volume_off,
+            color: Colors.white,
+          ),
         ),
         Expanded(
           child: ClipRRect(
@@ -384,8 +413,10 @@ class _Controls extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 10),
-        Text('${index + 1}/$total',
-            style: const TextStyle(color: Colors.white, fontSize: 12)),
+        Text(
+          '${index + 1}/$total',
+          style: const TextStyle(color: Colors.white, fontSize: 12),
+        ),
         const SizedBox(width: 10),
       ],
     );
