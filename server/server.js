@@ -254,11 +254,13 @@ function bearer(req) {
   return h.startsWith('Bearer ') ? verifyToken(h.slice(7)) : null;
 }
 function safeEq(a, b) {
-  if (!a || !b || a.length !== b.length) return false;
-  return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
+  if (!a || !b) return false;
+  const bufA = Buffer.from(a), bufB = Buffer.from(b);
+  if (bufA.byteLength !== bufB.byteLength) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
 }
-const isAdmin = (req, url) =>
-  safeEq(req.headers['x-admin-token'] || url.searchParams.get('adminToken') || '', ADMIN_TOKEN);
+const isAdmin = (req) =>
+  safeEq(req.headers['x-admin-token'] || '', ADMIN_TOKEN);
 
 // Per-IP sliding-window rate limiter (in-memory).
 const buckets = new Map();
@@ -338,6 +340,13 @@ function readBody(req) {
     req.on('end', () => { try { finish(b ? JSON.parse(b) : {}); } catch { finish({}); } });
     req.on('error', () => finish({}));
   });
+}
+
+if (PROD) {
+  if (JWT_SECRET === 'dev-secret' || ADMIN_TOKEN === 'admin-dev') {
+    console.error('FATAL: JWT_SECRET and ADMIN_TOKEN must be changed from defaults in production.');
+    process.exit(1);
+  }
 }
 
 const server = http.createServer(async (req, res) => {
@@ -631,7 +640,7 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
     // ── Admin ──
     if (p.startsWith('/admin/')) {
       if (PROD && ADMIN_TOKEN === 'admin-dev') return send(res, req, 503, { error: 'admin disabled: set a strong ADMIN_TOKEN' });
-      if (!isAdmin(req, url)) return send(res, req, 401, { error: 'admin token required' });
+      if (!isAdmin(req)) return send(res, req, 401, { error: 'admin token required' });
       if (m === 'GET' && p === '/admin/pending') {
         const [published, users] = [await load('published'), await load('users')];
         return send(res, req, 200, { courses: published.filter((c) => c.status === 'pending_review').map((c) => enrich(c, users)) });
