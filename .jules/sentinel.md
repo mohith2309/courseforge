@@ -1,0 +1,4 @@
+## 2024-06-27 - Fix Denial of Service in timing-safe comparisons
+**Vulnerability:** Node.js `crypto.timingSafeEqual` throws a `RangeError` if the buffers have different lengths. The `verifyToken` and `safeEq` functions were checking string `length` before converting to Buffers. An attacker could provide a token/signature with multi-byte characters where string `length` matched but `byteLength` differed, causing an unhandled exception and crashing the server (Denial of Service).
+**Learning:** Checking string `.length` is not sufficient before `crypto.timingSafeEqual`. Characters like `\u1000` have a string length of 1 but a byte length of 3 (in UTF-8), causing mismatched Buffer lengths.
+**Prevention:** Always convert strings to Buffers first, and then explicitly check `.byteLength` of the Buffers before calling `crypto.timingSafeEqual`.
