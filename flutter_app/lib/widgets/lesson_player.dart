@@ -40,7 +40,8 @@ class _LessonPlayerState extends State<LessonPlayer> {
   int _i = 0;
   bool _playing = true;
   bool _ttsOn = true;
-  bool _suppress = false; // ignore the completion fired by a programmatic stop()
+  bool _suppress =
+      false; // ignore the completion fired by a programmatic stop()
   Timer? _timer;
 
   @override
@@ -109,7 +110,8 @@ class _LessonPlayerState extends State<LessonPlayer> {
         .toList();
     final out = <String>[];
     for (var i = 0; i < sentences.length; i += 3) {
-      out.add(sentences.sublist(i, (i + 3).clamp(0, sentences.length)).join(' '));
+      out.add(
+          sentences.sublist(i, (i + 3).clamp(0, sentences.length)).join(' '));
     }
     return out;
   }
@@ -123,8 +125,8 @@ class _LessonPlayerState extends State<LessonPlayer> {
     // Backup duration ~ reading time (≈2.3 words/sec) + buffer.
     final words = body.isEmpty ? 1 : body.split(RegExp(r'\s+')).length;
     final secs = (words / 2.3 + 1.8).clamp(3.5, 32.0);
-    _timer = Timer(
-        Duration(milliseconds: (secs * 1000).round()), () => _advanceFrom(from));
+    _timer = Timer(Duration(milliseconds: (secs * 1000).round()),
+        () => _advanceFrom(from));
 
     _suppress = true;
     try {
@@ -228,7 +230,8 @@ class _LessonPlayerState extends State<LessonPlayer> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.auto_awesome, size: 12, color: Colors.white),
+                          Icon(Icons.auto_awesome,
+                              size: 12, color: Colors.white),
                           SizedBox(width: 3),
                           Text('CourseForge',
                               style: TextStyle(
@@ -293,8 +296,8 @@ class _LessonPlayerState extends State<LessonPlayer> {
               Expanded(
                 child: Text(
                   slide.body,
-                  style: TextStyle(
-                      fontSize: 15, height: 1.45, color: context.fg),
+                  style:
+                      TextStyle(fontSize: 15, height: 1.45, color: context.fg),
                 ),
               ),
             ],
@@ -362,6 +365,7 @@ class _Controls extends StatelessWidget {
         IconButton(
           onPressed: onToggle,
           iconSize: 22,
+          tooltip: playing ? 'Pause' : 'Play',
           icon: Icon(playing ? Icons.pause : Icons.play_arrow,
               color: Colors.white),
         ),
