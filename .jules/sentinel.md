@@ -1,0 +1,4 @@
+## 2024-06-29 - Buffer Length DoS & Token Leakage Regression
+**Vulnerability:** The application was vulnerable to unhandled exceptions when passing multi-byte strings to `crypto.timingSafeEqual` (where string length matched but byte length differed), allowing DoS and token length oracles. The application also allowed admin tokens in query parameters, leaking them to logs, and lacked a fail-closed startup check in production.
+**Learning:** Security directives from previous sessions regressed, likely due to a code rollback. It is critical to always verify current implementation against required security patterns (fail-closed, secure headers, buffer length checks) before proceeding.
+**Prevention:** 1) Always convert inputs to Buffers and check `.byteLength` before `timingSafeEqual`. 2) Only use headers for admin tokens. 3) Enforce a fail-closed check on startup for production environment secrets.
