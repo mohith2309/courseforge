@@ -243,9 +243,8 @@ function signToken(uid) {
 function verifyToken(tok) {
   if (!tok || tok.indexOf('.') < 0) return null;
   const [payload, sig] = tok.split('.');
-  const expected = hmac(payload);
-  if (sig.length !== expected.length ||
-      !crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return null;
+  const [bSig, bExp] = [Buffer.from(sig), Buffer.from(hmac(payload))];
+  if (bSig.byteLength !== bExp.byteLength || !crypto.timingSafeEqual(bSig, bExp)) return null;
   try { const p = JSON.parse(Buffer.from(payload, 'base64url').toString()); return p.exp > Date.now() ? p.uid : null; }
   catch { return null; }
 }
@@ -254,11 +253,11 @@ function bearer(req) {
   return h.startsWith('Bearer ') ? verifyToken(h.slice(7)) : null;
 }
 function safeEq(a, b) {
-  if (!a || !b || a.length !== b.length) return false;
-  return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
+  const [ba, bb] = [Buffer.from(String(a || '')), Buffer.from(String(b || ''))];
+  return ba.byteLength === bb.byteLength && crypto.timingSafeEqual(ba, bb);
 }
-const isAdmin = (req, url) =>
-  safeEq(req.headers['x-admin-token'] || url.searchParams.get('adminToken') || '', ADMIN_TOKEN);
+const isAdmin = (req) =>
+  safeEq(req.headers['x-admin-token'] || '', ADMIN_TOKEN);
 
 // Per-IP sliding-window rate limiter (in-memory).
 const buckets = new Map();
@@ -318,6 +317,9 @@ function corsFor(req) {
   const o = req.headers.origin;
   const h = {
     'Content-Type': 'application/json',
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-admin-token, x-app-key',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   };
@@ -631,7 +633,7 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
     // ── Admin ──
     if (p.startsWith('/admin/')) {
       if (PROD && ADMIN_TOKEN === 'admin-dev') return send(res, req, 503, { error: 'admin disabled: set a strong ADMIN_TOKEN' });
-      if (!isAdmin(req, url)) return send(res, req, 401, { error: 'admin token required' });
+      if (!isAdmin(req)) return send(res, req, 401, { error: 'admin token required' });
       if (m === 'GET' && p === '/admin/pending') {
         const [published, users] = [await load('published'), await load('users')];
         return send(res, req, 200, { courses: published.filter((c) => c.status === 'pending_review').map((c) => enrich(c, users)) });
@@ -663,8 +665,12 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
   }
 });
 
-server.listen(PORT, () => {
-  console.log(`CourseForge backend on :${PORT} (hardened)`);
-  console.log(`  store:${USE_FIRESTORE ? ' firestore' : USE_RTDB ? ' rtdb' : ' file'} | groq:${GROQ_LIVE} | razorpay:${RZP_LIVE} | mockPay:${ALLOW_MOCK_PAYMENTS}`);
-  console.log(`  appKeyGate:${Boolean(APP_KEY)} | corsAllow:[${ALLOWED_ORIGINS.join(',')}] | admin:${ADMIN_TOKEN === 'admin-dev' ? 'WEAK-DEFAULT' : 'set'} | prod:${PROD}`);
-});
+if (process.env.NODE_ENV !== 'test') {
+  server.listen(PORT, () => {
+    console.log(`CourseForge backend on :${PORT} (hardened)`);
+    console.log(`  store:${USE_FIRESTORE ? ' firestore' : USE_RTDB ? ' rtdb' : ' file'} | groq:${GROQ_LIVE} | razorpay:${RZP_LIVE} | mockPay:${ALLOW_MOCK_PAYMENTS}`);
+    console.log(`  appKeyGate:${Boolean(APP_KEY)} | corsAllow:[${ALLOWED_ORIGINS.join(',')}] | admin:${ADMIN_TOKEN === 'admin-dev' ? 'WEAK-DEFAULT' : 'set'} | prod:${PROD}`);
+  });
+} else {
+  module.exports = { safeEq, verifyToken, signToken, isAdmin };
+}
