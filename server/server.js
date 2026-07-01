@@ -244,8 +244,10 @@ function verifyToken(tok) {
   if (!tok || tok.indexOf('.') < 0) return null;
   const [payload, sig] = tok.split('.');
   const expected = hmac(payload);
-  if (sig.length !== expected.length ||
-      !crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return null;
+  const sigBuf = Buffer.from(sig);
+  const expectedBuf = Buffer.from(expected);
+  if (sigBuf.byteLength !== expectedBuf.byteLength ||
+      !crypto.timingSafeEqual(sigBuf, expectedBuf)) return null;
   try { const p = JSON.parse(Buffer.from(payload, 'base64url').toString()); return p.exp > Date.now() ? p.uid : null; }
   catch { return null; }
 }
@@ -254,8 +256,11 @@ function bearer(req) {
   return h.startsWith('Bearer ') ? verifyToken(h.slice(7)) : null;
 }
 function safeEq(a, b) {
-  if (!a || !b || a.length !== b.length) return false;
-  return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
+  if (!a || !b) return false;
+  const aBuf = Buffer.from(a);
+  const bBuf = Buffer.from(b);
+  if (aBuf.byteLength !== bBuf.byteLength) return false;
+  return crypto.timingSafeEqual(aBuf, bBuf);
 }
 const isAdmin = (req, url) =>
   safeEq(req.headers['x-admin-token'] || url.searchParams.get('adminToken') || '', ADMIN_TOKEN);
