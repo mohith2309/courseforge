@@ -1,0 +1,4 @@
+## 2024-07-04 - Fix DoS vulnerability in timing-safe string comparison
+**Vulnerability:** `crypto.timingSafeEqual` was called on strings converted to buffers after only checking the string's character length. Attackers could cause length mismatches by submitting multi-byte strings with identical character counts but different byte lengths, resulting in an unhandled exception that crashes the Node.js server (DoS).
+**Learning:** Checking `string.length` is not equivalent to checking a Buffer's `byteLength` due to multi-byte characters (like Unicode). Unhandled exceptions thrown in synchronous cryptographic functions bubble up and can crash the process.
+**Prevention:** Always compare `.byteLength` of `Buffer` instances, instead of `.length` on `string`, prior to invoking `crypto.timingSafeEqual()`. Validate types strictly before cryptographic comparisons.
