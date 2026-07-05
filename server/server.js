@@ -47,6 +47,12 @@ const ALLOW_MOCK_PAYMENTS = cfg('ALLOW_MOCK_PAYMENTS', 'false') === 'true';
 const ADMIN_TOKEN = cfg('ADMIN_TOKEN', 'admin-dev');
 const JWT_SECRET = cfg('JWT_SECRET', 'dev-secret');
 const APP_KEY = cfg('APP_KEY'); // gate for AI endpoints
+
+// Strict fail-closed check for production: abort if critical secrets are defaults.
+if (PROD && (JWT_SECRET === 'dev-secret' || ADMIN_TOKEN === 'admin-dev')) {
+  console.error('[CRITICAL] Insecure configuration: set JWT_SECRET and a strong ADMIN_TOKEN in production.');
+  process.exit(1);
+}
 const FIREBASE_PROJECT_NUM = cfg('FIREBASE_PROJECT_NUM', '374206849691');
 const ALLOWED_ORIGINS = cfg('ALLOWED_ORIGINS', '')
   .split(',').map((s) => s.trim()).filter(Boolean);
@@ -324,6 +330,7 @@ function corsFor(req) {
     'X-Content-Type-Options': 'nosniff',
     'X-Frame-Options': 'DENY',
     'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
   };
   if (o && ALLOWED_ORIGINS.includes(o)) h['Access-Control-Allow-Origin'] = o;
   return h;
