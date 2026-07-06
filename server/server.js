@@ -46,6 +46,19 @@ const RZP_LIVE = Boolean(RZP_KEY_ID && RZP_KEY_SECRET);
 const ALLOW_MOCK_PAYMENTS = cfg('ALLOW_MOCK_PAYMENTS', 'false') === 'true';
 const ADMIN_TOKEN = cfg('ADMIN_TOKEN', 'admin-dev');
 const JWT_SECRET = cfg('JWT_SECRET', 'dev-secret');
+
+// Fail-closed startup check: never run with defaults in production.
+if (PROD) {
+  if (ADMIN_TOKEN === 'admin-dev' || JWT_SECRET === 'dev-secret') {
+    console.error('CRITICAL: ADMIN_TOKEN and JWT_SECRET must be set in production.');
+    process.exit(1);
+  }
+  if (cfg('ALLOW_MOCK_PAYMENTS') === 'true') {
+    console.error('CRITICAL: ALLOW_MOCK_PAYMENTS must be false in production.');
+    process.exit(1);
+  }
+}
+
 const APP_KEY = cfg('APP_KEY'); // gate for AI endpoints
 const FIREBASE_PROJECT_NUM = cfg('FIREBASE_PROJECT_NUM', '374206849691');
 const ALLOWED_ORIGINS = cfg('ALLOWED_ORIGINS', '')
@@ -324,6 +337,8 @@ function corsFor(req) {
     'X-Content-Type-Options': 'nosniff',
     'X-Frame-Options': 'DENY',
     'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none';",
   };
   if (o && ALLOWED_ORIGINS.includes(o)) h['Access-Control-Allow-Origin'] = o;
   return h;
@@ -667,8 +682,17 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
   }
 });
 
-server.listen(PORT, () => {
-  console.log(`CourseForge backend on :${PORT} (hardened)`);
-  console.log(`  store:${USE_FIRESTORE ? ' firestore' : USE_RTDB ? ' rtdb' : ' file'} | groq:${GROQ_LIVE} | razorpay:${RZP_LIVE} | mockPay:${ALLOW_MOCK_PAYMENTS}`);
-  console.log(`  appKeyGate:${Boolean(APP_KEY)} | corsAllow:[${ALLOWED_ORIGINS.join(',')}] | admin:${ADMIN_TOKEN === 'admin-dev' ? 'WEAK-DEFAULT' : 'set'} | prod:${PROD}`);
-});
+if (process.env.NODE_ENV !== 'test') {
+  server.listen(PORT, () => {
+    console.log(`CourseForge backend on :${PORT} (hardened)`);
+    console.log(`  store:${USE_FIRESTORE ? ' firestore' : USE_RTDB ? ' rtdb' : ' file'} | groq:${GROQ_LIVE} | razorpay:${RZP_LIVE} | mockPay:${ALLOW_MOCK_PAYMENTS}`);
+    console.log(`  appKeyGate:${Boolean(APP_KEY)} | corsAllow:[${ALLOWED_ORIGINS.join(',')}] | admin:${ADMIN_TOKEN === 'admin-dev' ? 'WEAK-DEFAULT' : 'set'} | prod:${PROD}`);
+  });
+}
+
+if (process.env.NODE_ENV === 'test') {
+  module.exports = {
+    corsFor, verifyToken, safeEq, isAdmin, signToken, hashPw, cleanCourse, enrich,
+    buckets, rateLimit, hmac, server
+  };
+}
