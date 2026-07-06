@@ -55,6 +55,18 @@ const COMMISSION = 0.3;
 const PLATFORM_OWNER_ID = cfg('PLATFORM_OWNER_ID', '');
 const MAX_BODY = 512 * 1024; // 512 KB
 
+// ── Security Hardening (Startup Fail-Closed) ─────────────────────────────────
+if (PROD) {
+  if (ADMIN_TOKEN === 'admin-dev' || JWT_SECRET === 'dev-secret') {
+    console.error('[CRITICAL] Refusing to start in production with default weak secrets (ADMIN_TOKEN or JWT_SECRET).');
+    process.exit(1);
+  }
+  if (ALLOW_MOCK_PAYMENTS) {
+    console.error('[CRITICAL] Refusing to start in production with ALLOW_MOCK_PAYMENTS=true.');
+    process.exit(1);
+  }
+}
+
 // ── HTTPS JSON helper ────────────────────────────────────────────────────────
 function httpsJson(url, { method = 'POST', headers = {}, body, timeoutMs = 45000 } = {}) {
   return new Promise((resolve, reject) => {
