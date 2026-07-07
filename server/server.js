@@ -324,6 +324,8 @@ function corsFor(req) {
     'X-Content-Type-Options': 'nosniff',
     'X-Frame-Options': 'DENY',
     'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none';",
   };
   if (o && ALLOWED_ORIGINS.includes(o)) h['Access-Control-Allow-Origin'] = o;
   return h;
@@ -422,7 +424,7 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
         try {
           const raw = await aiText(prompt, { maxTokens: 1600, temperature: 0.5 });
           const s = raw.indexOf('['), e = raw.lastIndexOf(']');
-          return send(res, req, 200, { questions: s >= 0 ? JSON.parse(raw.slice(s, e + 1).replace(/[ -]+/g, ' ')) : [] });
+          return send(res, req, 200, { questions: s >= 0 ? JSON.parse(raw.slice(s, e + 1).replace(/[\u0000-\u001F]+/g, ' ')) : [] });
         } catch { return send(res, req, 200, { questions: [] }); }
       }
       return send(res, req, 404, { error: 'not found' });
@@ -544,11 +546,8 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
         if (!have.has(cid)) { purchases.unshift({ id: crypto.randomUUID(), courseId: cid, buyerId: uid, claimed: true, at: Date.now() }); have.add(cid); added++; }
       }
       if (added) await save('purchases', purchases);
-      if (body.pro === true) {
-        const users = await load('users');
-        const u = users.find((x) => x.id === uid);
-        if (u) { u.pro = true; await save('users', users); }
-      }
+      // Security: removed unsafe body.pro claim (privilege escalation).
+      // Pro status must only be granted via verified payments.
       const owned = [...have];
       const u2 = (await load('users')).find((x) => x.id === uid);
       return send(res, req, 200, { ok: true, owned, pro: Boolean(u2 && u2.pro) });
