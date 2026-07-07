@@ -544,11 +544,6 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
         if (!have.has(cid)) { purchases.unshift({ id: crypto.randomUUID(), courseId: cid, buyerId: uid, claimed: true, at: Date.now() }); have.add(cid); added++; }
       }
       if (added) await save('purchases', purchases);
-      if (body.pro === true) {
-        const users = await load('users');
-        const u = users.find((x) => x.id === uid);
-        if (u) { u.pro = true; await save('users', users); }
-      }
       const owned = [...have];
       const u2 = (await load('users')).find((x) => x.id === uid);
       return send(res, req, 200, { ok: true, owned, pro: Boolean(u2 && u2.pro) });
@@ -666,6 +661,12 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
     return send(res, req, 500, { error: 'internal error' });
   }
 });
+
+if (PROD && (JWT_SECRET === 'dev-secret' || ADMIN_TOKEN === 'admin-dev' || ALLOW_MOCK_PAYMENTS)) {
+  console.error('CRITICAL SECURITY ERROR: Refusing to start in production with insecure defaults.');
+  console.error('Please configure strong JWT_SECRET, ADMIN_TOKEN and disable ALLOW_MOCK_PAYMENTS.');
+  process.exit(1);
+}
 
 server.listen(PORT, () => {
   console.log(`CourseForge backend on :${PORT} (hardened)`);
