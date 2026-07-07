@@ -295,8 +295,9 @@ function rzpVerify(orderId, paymentId, signature) {
   return safeEq(expected, signature || '');
 }
 function hashPw(pw, salt) { return crypto.scryptSync(pw, salt, 32).toString('hex'); }
+// ⚡ Bolt: Convert array find (O(n)) to Map lookup (O(1)) for bulk course processing
 function enrich(entry, users) {
-  const u = users.find((x) => x.id === entry.publisherId);
+  const u = users instanceof Map ? users.get(entry.publisherId) : users.find((x) => x.id === entry.publisherId);
   return { ...entry, publisherName: u ? u.name : 'Unknown', publisherVerified: u ? Boolean(u.verifiedPublisher) : false };
 }
 // Whitelist course fields on publish (prevents rating/enrollment spoofing).
@@ -471,7 +472,8 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
     // ── Public catalog (read-only) ──
     if (m === 'GET' && p === '/courses/published') {
       const [published, users] = [await load('published'), await load('users')];
-      return send(res, req, 200, { courses: published.filter((c) => c.status === 'published').map((c) => enrich(c, users)) });
+      const uMap = new Map(users.map(u => [u.id, u]));
+      return send(res, req, 200, { courses: published.filter((c) => c.status === 'published').map((c) => enrich(c, uMap)) });
     }
 
     // ── Publishing (auth required; publisherId from token) ──
@@ -638,7 +640,8 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
       if (!isAdmin(req)) return send(res, req, 401, { error: 'admin token required' });
       if (m === 'GET' && p === '/admin/pending') {
         const [published, users] = [await load('published'), await load('users')];
-        return send(res, req, 200, { courses: published.filter((c) => c.status === 'pending_review').map((c) => enrich(c, users)) });
+        const uMap = new Map(users.map(u => [u.id, u]));
+        return send(res, req, 200, { courses: published.filter((c) => c.status === 'pending_review').map((c) => enrich(c, uMap)) });
       }
       const body = await readBody(req);
       if (body.__big) return send(res, req, 413, { error: 'payload too large' });
