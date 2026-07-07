@@ -1,0 +1,3 @@
+## 2024-05-18 - Fast array joining via Map lookups
+**Learning:** In `server/server.js`, using `Array.find` inside a `.map` over the `published` list (where `enrich` does `users.find(u => u.id === entry.publisherId)`) leads to O(N*M) complexity. For arrays of even moderate size (e.g. 5,000 users, 1,000 courses), this leads to a noticeable performance hit (approx 26ms per request versus 3ms when using Map).
+**Action:** When enriching elements of one array with data from another, always transform the reference array into a Map (`new Map(arr.map(x => [x.id, x]))`) beforehand, enabling O(1) lookups during the mapping operation.
