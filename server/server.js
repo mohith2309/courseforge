@@ -296,7 +296,8 @@ function rzpVerify(orderId, paymentId, signature) {
 }
 function hashPw(pw, salt) { return crypto.scryptSync(pw, salt, 32).toString('hex'); }
 function enrich(entry, users) {
-  const u = users.find((x) => x.id === entry.publisherId);
+  // Performance: O(1) lookup if users is a Map, else O(N) fallback.
+  const u = users instanceof Map ? users.get(entry.publisherId) : users.find((x) => x.id === entry.publisherId);
   return { ...entry, publisherName: u ? u.name : 'Unknown', publisherVerified: u ? Boolean(u.verifiedPublisher) : false };
 }
 // Whitelist course fields on publish (prevents rating/enrollment spoofing).
@@ -471,7 +472,9 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
     // ── Public catalog (read-only) ──
     if (m === 'GET' && p === '/courses/published') {
       const [published, users] = [await load('published'), await load('users')];
-      return send(res, req, 200, { courses: published.filter((c) => c.status === 'published').map((c) => enrich(c, users)) });
+      // Performance: Construct a Map for O(1) user lookup during enrichment (O(C+U) total).
+      const userMap = new Map(users.map((u) => [u.id, u]));
+      return send(res, req, 200, { courses: published.filter((c) => c.status === 'published').map((c) => enrich(c, userMap)) });
     }
 
     // ── Publishing (auth required; publisherId from token) ──
@@ -638,7 +641,9 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
       if (!isAdmin(req)) return send(res, req, 401, { error: 'admin token required' });
       if (m === 'GET' && p === '/admin/pending') {
         const [published, users] = [await load('published'), await load('users')];
-        return send(res, req, 200, { courses: published.filter((c) => c.status === 'pending_review').map((c) => enrich(c, users)) });
+        // Performance: O(1) user lookup via Map during enrichment.
+        const userMap = new Map(users.map((u) => [u.id, u]));
+        return send(res, req, 200, { courses: published.filter((c) => c.status === 'pending_review').map((c) => enrich(c, userMap)) });
       }
       const body = await readBody(req);
       if (body.__big) return send(res, req, 413, { error: 'payload too large' });
