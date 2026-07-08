@@ -48,6 +48,12 @@ const ADMIN_TOKEN = cfg('ADMIN_TOKEN', 'admin-dev');
 const JWT_SECRET = cfg('JWT_SECRET', 'dev-secret');
 const APP_KEY = cfg('APP_KEY'); // gate for AI endpoints
 const FIREBASE_PROJECT_NUM = cfg('FIREBASE_PROJECT_NUM', '374206849691');
+
+// ── Security Hardening: Fail-Closed on Default Secrets in Production ─────────
+if (PROD && (JWT_SECRET === 'dev-secret' || ADMIN_TOKEN === 'admin-dev' || ALLOW_MOCK_PAYMENTS)) {
+  console.error('CRITICAL: Server starting in production with default secrets or mock payments enabled. Aborting.');
+  process.exit(1);
+}
 const ALLOWED_ORIGINS = cfg('ALLOWED_ORIGINS', '')
   .split(',').map((s) => s.trim()).filter(Boolean);
 const COMMISSION = 0.3;
