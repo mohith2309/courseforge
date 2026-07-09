@@ -1,0 +1,3 @@
+## 2025-02-28 - Avoid O(N^2) complexity in array enrichment
+**Learning:** Using `Array.find` inside a loop over another array (like `Array.map`) causes O(N^2) time complexity. In `server/server.js`, enriching courses with user data using `users.find` became a severe bottleneck.
+**Action:** When enriching a list of objects with data from another list, always pre-compute a `Map` of the secondary list for O(1) lookups before iterating. The `enrich` function was updated to accept `users instanceof Map` to retain backward compatibility while drastically speeding up the main endpoints (`/courses/published` and `/admin/pending`).
