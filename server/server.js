@@ -230,7 +230,7 @@ The "script" MUST be VERY detailed — 1100 to 1600 words of flowing, conversati
 function parseLooseJson(text) {
   const s = text.indexOf('{'), e = text.lastIndexOf('}');
   if (s < 0 || e <= s) throw new Error('no JSON');
-  return JSON.parse(text.slice(s, e + 1).replace(/[\u0000-\u001F]+/g, ' '));
+  return JSON.parse(text.slice(s, e + 1).replace(/[\x00-\x1f]+/g, ' '));
 }
 
 // ── Security primitives ──────────────────────────────────────────────────────
@@ -422,7 +422,7 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
         try {
           const raw = await aiText(prompt, { maxTokens: 1600, temperature: 0.5 });
           const s = raw.indexOf('['), e = raw.lastIndexOf(']');
-          return send(res, req, 200, { questions: s >= 0 ? JSON.parse(raw.slice(s, e + 1).replace(/[ -]+/g, ' ')) : [] });
+          return send(res, req, 200, { questions: s >= 0 ? JSON.parse(raw.slice(s, e + 1).replace(/[\x00-\x1f]+/g, ' ')) : [] });
         } catch { return send(res, req, 200, { questions: [] }); }
       }
       return send(res, req, 404, { error: 'not found' });
@@ -523,6 +523,8 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
     if (m === 'POST' && p === '/me/pro') {
       const uid = bearer(req);
       if (!uid) return send(res, req, 401, { error: 'sign in required' });
+      // Security: Gated by ALLOW_MOCK_PAYMENTS (off in production).
+      if (!ALLOW_MOCK_PAYMENTS) return send(res, req, 403, { error: 'mock payments disabled' });
       const users = await load('users');
       const u = users.find((x) => x.id === uid);
       if (!u) return send(res, req, 404, { error: 'user not found' });
@@ -540,18 +542,23 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
       const purchases = await load('purchases');
       const have = new Set(purchases.filter((x) => x.buyerId === uid).map((x) => x.courseId));
       let added = 0;
-      for (const cid of ids) {
-        if (!have.has(cid)) { purchases.unshift({ id: crypto.randomUUID(), courseId: cid, buyerId: uid, claimed: true, at: Date.now() }); have.add(cid); added++; }
+      // Only allow claiming if mock payments are allowed (or if we had receipt validation).
+      if (ALLOW_MOCK_PAYMENTS) {
+        for (const cid of ids) {
+          if (!have.has(cid)) {
+            purchases.unshift({ id: crypto.randomUUID(), courseId: cid, buyerId: uid, claimed: true, at: Date.now() });
+            have.add(cid); added++;
+          }
+        }
+        if (added) await save('purchases', purchases);
+        if (body.pro === true) {
+          const users = await load('users');
+          const u = users.find((x) => x.id === uid);
+          if (u) { u.pro = true; await save('users', users); }
+        }
       }
-      if (added) await save('purchases', purchases);
-      if (body.pro === true) {
-        const users = await load('users');
-        const u = users.find((x) => x.id === uid);
-        if (u) { u.pro = true; await save('users', users); }
-      }
-      const owned = [...have];
       const u2 = (await load('users')).find((x) => x.id === uid);
-      return send(res, req, 200, { ok: true, owned, pro: Boolean(u2 && u2.pro) });
+      return send(res, req, 200, { ok: true, owned: [...have], pro: Boolean(u2 && u2.pro) });
     }
 
     // ── Payments ──
@@ -666,6 +673,13 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
     return send(res, req, 500, { error: 'internal error' });
   }
 });
+
+if (PROD) {
+  if (JWT_SECRET === 'dev-secret' || ADMIN_TOKEN === 'admin-dev' || ALLOW_MOCK_PAYMENTS) {
+    console.error('FATAL: Insecure configuration in production (JWT_SECRET, ADMIN_TOKEN, or ALLOW_MOCK_PAYMENTS).');
+    process.exit(1);
+  }
+}
 
 server.listen(PORT, () => {
   console.log(`CourseForge backend on :${PORT} (hardened)`);
