@@ -1,0 +1,3 @@
+## 2026-07-10 - Dynamic Tooltips for Toggle Buttons
+**Learning:** For dynamic toggle icon buttons (like Play/Pause), it is an essential accessibility practice to provide a `tooltip` that is dynamically mapped to the state variable driving the visual icon. This ensures that screen readers provide the correct semantic label representing the current or next state action synchronously with visual updates.
+**Action:** When adding `IconButton` widgets that change icons based on a state (e.g. `playing`), always define the `tooltip` property conditionally mapping to the same state (e.g. `tooltip: playing ? 'Pause' : 'Play'`).
