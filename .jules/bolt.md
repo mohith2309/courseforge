@@ -1,0 +1,3 @@
+## 2025-05-14 - Optimizing Course Enrichment with O(1) Lookups
+**Learning:** Nested loops (O(N*M) complexity) created by using `Array.find` inside a `map` for data enrichment are a significant performance bottleneck as the data grows. In this codebase, the `enrich` function was scanning the entire users list for every course being returned in the marketplace and admin views.
+**Action:** Always prefer Map-based lookups (O(1)) over Array searches (O(N)) when performing joins or enrichment between two collections. Construct a temporary Map before processing the main list to ensure linear total complexity.
