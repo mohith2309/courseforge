@@ -523,6 +523,7 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
     if (m === 'POST' && p === '/me/pro') {
       const uid = bearer(req);
       if (!uid) return send(res, req, 401, { error: 'sign in required' });
+      if (!ALLOW_MOCK_PAYMENTS) return send(res, req, 403, { error: 'direct pro escalation disabled' });
       const users = await load('users');
       const u = users.find((x) => x.id === uid);
       if (!u) return send(res, req, 404, { error: 'user not found' });
@@ -538,13 +539,19 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
       if (body.__big) return send(res, req, 413, { error: 'payload too large' });
       const ids = Array.isArray(body.courseIds) ? body.courseIds.map(String).slice(0, 200) : [];
       const purchases = await load('purchases');
+      const published = await load('published');
       const have = new Set(purchases.filter((x) => x.buyerId === uid).map((x) => x.courseId));
       let added = 0;
       for (const cid of ids) {
-        if (!have.has(cid)) { purchases.unshift({ id: crypto.randomUUID(), courseId: cid, buyerId: uid, claimed: true, at: Date.now() }); have.add(cid); added++; }
+        const c = published.find((x) => x.id === cid);
+        const canClaim = c && (c.priceInr === 0 || ALLOW_MOCK_PAYMENTS);
+        if (canClaim && !have.has(cid)) {
+          purchases.unshift({ id: crypto.randomUUID(), courseId: cid, buyerId: uid, claimed: true, at: Date.now() });
+          have.add(cid); added++;
+        }
       }
       if (added) await save('purchases', purchases);
-      if (body.pro === true) {
+      if (body.pro === true && ALLOW_MOCK_PAYMENTS) {
         const users = await load('users');
         const u = users.find((x) => x.id === uid);
         if (u) { u.pro = true; await save('users', users); }
