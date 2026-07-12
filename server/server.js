@@ -422,7 +422,7 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
         try {
           const raw = await aiText(prompt, { maxTokens: 1600, temperature: 0.5 });
           const s = raw.indexOf('['), e = raw.lastIndexOf(']');
-          return send(res, req, 200, { questions: s >= 0 ? JSON.parse(raw.slice(s, e + 1).replace(/[ -]+/g, ' ')) : [] });
+          return send(res, req, 200, { questions: s >= 0 ? JSON.parse(raw.slice(s, e + 1).replace(/[\x00-\x1f]+/g, ' ')) : [] });
         } catch { return send(res, req, 200, { questions: [] }); }
       }
       return send(res, req, 404, { error: 'not found' });
@@ -521,6 +521,7 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
       return send(res, req, 200, { pro: Boolean(u && u.pro), owned });
     }
     if (m === 'POST' && p === '/me/pro') {
+      if (!ALLOW_MOCK_PAYMENTS) return send(res, req, 403, { error: 'mock payments disabled' });
       const uid = bearer(req);
       if (!uid) return send(res, req, 401, { error: 'sign in required' });
       const users = await load('users');
@@ -532,6 +533,7 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
     // Guest → sign-in migration: attach courses bought / Pro unlocked while
     // signed out to the now-signed-in account.
     if (m === 'POST' && p === '/me/claim') {
+      if (!ALLOW_MOCK_PAYMENTS) return send(res, req, 403, { error: 'mock payments disabled' });
       const uid = bearer(req);
       if (!uid) return send(res, req, 401, { error: 'sign in required' });
       const body = await readBody(req);
@@ -666,6 +668,12 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
     return send(res, req, 500, { error: 'internal error' });
   }
 });
+
+if (PROD) {
+  if (JWT_SECRET === 'dev-secret') { console.error('CRITICAL: JWT_SECRET must be set in production'); process.exit(1); }
+  if (ADMIN_TOKEN === 'admin-dev') { console.error('CRITICAL: ADMIN_TOKEN must be set in production'); process.exit(1); }
+  if (ALLOW_MOCK_PAYMENTS) { console.error('CRITICAL: ALLOW_MOCK_PAYMENTS must be false in production'); process.exit(1); }
+}
 
 server.listen(PORT, () => {
   console.log(`CourseForge backend on :${PORT} (hardened)`);
