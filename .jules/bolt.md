@@ -1,0 +1,3 @@
+## 2025-05-18 - Replacing O(N) Array.find with O(1) Map.get in Course Enrichment
+**Learning:** In `server/server.js`, mapping over courses and enriching them with user data using `users.find` created an O(N^2) bottleneck. This is common when joining lists.
+**Action:** Always pre-process the "lookup" array into a Map (`new Map(users.map(u => [u.id, u]))`) and use `usersMap.get()` to achieve O(N + M) complexity instead of O(N * M). The `enrich` function should defensively handle both Maps and Arrays to maintain backward compatibility during migration.
