@@ -1,0 +1,3 @@
+## 2024-06-18 - Optimize bulk course enrichment
+**Learning:** Performing `Array.find()` inside a `map()` loop (e.g. `published.map((c) => enrich(c, users))`) creates a critical $O(C \times U)$ complexity bottleneck. As the number of courses (C) and users (U) grows, this significantly slows down catalog and admin endpoints.
+**Action:** Always convert lookup arrays into a `Map` before the loop (e.g., `new Map(users.map(u => [u.id, u]))`). This reduces the complexity to $O(C + U)$ by enabling $O(1)$ lookups inside the loop while maintaining fallback compatibility for single-item lookups elsewhere.
