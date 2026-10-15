@@ -1,0 +1,3 @@
+## 2024-03-24 - O(C*U) Complexity in Bulk Enrichment
+**Learning:** The course enrichment function (`enrich()`) previously used `Array.find()` (O(N)) to match publisher information. When iterating over a catalog of C courses, this led to $O(C \times U)$ complexity. Pre-instantiating a `Map` of users allows O(1) lookups, reducing the bottleneck to O(C+U). Node.js event loop can block on array searches when catalogs and user bases grow.
+**Action:** When mapping over large collections to enrich data with foreign keys, always pre-instantiate a `Map` outside the loop to optimize lookups rather than repeatedly calling `Array.find()`.
