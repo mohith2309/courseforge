@@ -667,8 +667,12 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
   }
 });
 
-server.listen(PORT, () => {
-  console.log(`CourseForge backend on :${PORT} (hardened)`);
-  console.log(`  store:${USE_FIRESTORE ? ' firestore' : USE_RTDB ? ' rtdb' : ' file'} | groq:${GROQ_LIVE} | razorpay:${RZP_LIVE} | mockPay:${ALLOW_MOCK_PAYMENTS}`);
-  console.log(`  appKeyGate:${Boolean(APP_KEY)} | corsAllow:[${ALLOWED_ORIGINS.join(',')}] | admin:${ADMIN_TOKEN === 'admin-dev' ? 'WEAK-DEFAULT' : 'set'} | prod:${PROD}`);
-});
+if (require.main === module) {
+  server.listen(PORT, () => {
+    console.log(`CourseForge backend on :${PORT} (hardened)`);
+    console.log(`  store:${USE_FIRESTORE ? ' firestore' : USE_RTDB ? ' rtdb' : ' file'} | groq:${GROQ_LIVE} | razorpay:${RZP_LIVE} | mockPay:${ALLOW_MOCK_PAYMENTS}`);
+    console.log(`  appKeyGate:${Boolean(APP_KEY)} | corsAllow:[${ALLOWED_ORIGINS.join(',')}] | admin:${ADMIN_TOKEN === 'admin-dev' ? 'WEAK-DEFAULT' : 'set'} | prod:${PROD}`);
+  });
+}
+
+module.exports = { rateLimit, buckets };
