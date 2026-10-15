@@ -123,25 +123,50 @@ async function fsSave(name, value) {
 const FB_URL = cfg('FIREBASE_DB_URL', '').replace(/\/$/, '');
 const FB_SECRET = cfg('FIREBASE_DB_SECRET', '');
 const USE_RTDB = DATA_BACKEND === 'firebase' && Boolean(FB_URL);
+
+// In-memory cache for datastore objects (users, published, etc.) to reduce I/O.
+const _cache = new Map();
+
 async function load(name) {
-  if (USE_FIRESTORE) return fsLoad(name);
+  if (_cache.has(name)) return _cache.get(name);
+  if (USE_FIRESTORE) {
+    const res = await fsLoad(name);
+    _cache.set(name, res);
+    return res;
+  }
   if (USE_RTDB) {
     const auth = FB_SECRET ? `?auth=${FB_SECRET}` : '';
     const { status, body } = await httpsJson(`${FB_URL}/${name}.json${auth}`, { method: 'GET' });
-    if (status === 200 && body) return Array.isArray(body) ? body : Object.values(body);
-    return [];
+    if (status === 200) {
+      const res = body ? (Array.isArray(body) ? body : Object.values(body)) : [];
+      _cache.set(name, res);
+      return res;
+    }
+    return []; // Don't cache on transient error
   }
-  try { return JSON.parse(fs.readFileSync(path.join(DATA_DIR, `${name}.json`), 'utf8')); } catch { return []; }
+  try {
+    const res = JSON.parse(fs.readFileSync(path.join(DATA_DIR, `${name}.json`), 'utf8'));
+    _cache.set(name, res);
+    return res;
+  } catch (e) {
+    if (e.code === 'ENOENT') {
+      _cache.set(name, []);
+      return [];
+    }
+    return []; // Don't cache on disk/perm error
+  }
 }
+
 async function save(name, value) {
-  if (USE_FIRESTORE) return fsSave(name, value);
-  if (USE_RTDB) {
+  if (USE_FIRESTORE) await fsSave(name, value);
+  else if (USE_RTDB) {
     const auth = FB_SECRET ? `?auth=${FB_SECRET}` : '';
     await httpsJson(`${FB_URL}/${name}.json${auth}`, { method: 'PUT', body: value });
-    return;
+  } else {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+    fs.writeFileSync(path.join(DATA_DIR, `${name}.json`), JSON.stringify(value, null, 2));
   }
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-  fs.writeFileSync(path.join(DATA_DIR, `${name}.json`), JSON.stringify(value, null, 2));
+  _cache.set(name, value);
 }
 
 // ── AI providers ─────────────────────────────────────────────────────────────
@@ -296,7 +321,8 @@ function rzpVerify(orderId, paymentId, signature) {
 }
 function hashPw(pw, salt) { return crypto.scryptSync(pw, salt, 32).toString('hex'); }
 function enrich(entry, users) {
-  const u = users.find((x) => x.id === entry.publisherId);
+  // Support both Array and Map for O(1) lookups in bulk operations.
+  const u = users instanceof Map ? users.get(entry.publisherId) : users.find((x) => x.id === entry.publisherId);
   return { ...entry, publisherName: u ? u.name : 'Unknown', publisherVerified: u ? Boolean(u.verifiedPublisher) : false };
 }
 // Whitelist course fields on publish (prevents rating/enrollment spoofing).
@@ -471,7 +497,8 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
     // ── Public catalog (read-only) ──
     if (m === 'GET' && p === '/courses/published') {
       const [published, users] = [await load('published'), await load('users')];
-      return send(res, req, 200, { courses: published.filter((c) => c.status === 'published').map((c) => enrich(c, users)) });
+      const userMap = new Map(users.map((u) => [u.id, u]));
+      return send(res, req, 200, { courses: published.filter((c) => c.status === 'published').map((c) => enrich(c, userMap)) });
     }
 
     // ── Publishing (auth required; publisherId from token) ──
@@ -638,7 +665,8 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
       if (!isAdmin(req)) return send(res, req, 401, { error: 'admin token required' });
       if (m === 'GET' && p === '/admin/pending') {
         const [published, users] = [await load('published'), await load('users')];
-        return send(res, req, 200, { courses: published.filter((c) => c.status === 'pending_review').map((c) => enrich(c, users)) });
+        const userMap = new Map(users.map((u) => [u.id, u]));
+        return send(res, req, 200, { courses: published.filter((c) => c.status === 'pending_review').map((c) => enrich(c, userMap)) });
       }
       const body = await readBody(req);
       if (body.__big) return send(res, req, 413, { error: 'payload too large' });
