@@ -1,0 +1,3 @@
+## 2025-06-13 - [Dynamic Tooltips for Icon-Only Buttons]
+**Learning:** Icon-only buttons (like `IconButton` in Flutter) that change visual state (e.g., Play to Pause) must also update their semantic labels dynamically. If the `tooltip` is omitted, screen readers only announce "Button", leaving visually impaired users without context.
+**Action:** When implementing an icon-only button whose icon is derived from a state variable (e.g., `playing ? Icons.pause : Icons.play_arrow`), map the `tooltip` property to the exact same state variable (e.g., `tooltip: playing ? 'Pause' : 'Play'`) to keep accessibility labels synchronously updated with the UI.
