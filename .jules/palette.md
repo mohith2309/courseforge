@@ -1,0 +1,3 @@
+## 2024-05-24 - Dynamic IconButtons missing Tooltips
+**Learning:** Icon-only buttons (`IconButton`) mapped to dynamic state (like play/pause) are often overlooked for accessibility labels, especially when adjacent buttons in the same row correctly map their tooltips to state (like the mute/unmute button).
+**Action:** When implementing or reviewing `IconButton`s with state-driven icons, ensure a corresponding state-driven `tooltip` is always provided.
