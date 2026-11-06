@@ -48,6 +48,14 @@ const ADMIN_TOKEN = cfg('ADMIN_TOKEN', 'admin-dev');
 const JWT_SECRET = cfg('JWT_SECRET', 'dev-secret');
 const APP_KEY = cfg('APP_KEY'); // gate for AI endpoints
 const FIREBASE_PROJECT_NUM = cfg('FIREBASE_PROJECT_NUM', '374206849691');
+
+if (PROD) {
+  if (ADMIN_TOKEN === 'admin-dev' || JWT_SECRET === 'dev-secret' || ALLOW_MOCK_PAYMENTS) {
+    console.error('FATAL: Insecure configuration in production environment.');
+    console.error('Must set strong ADMIN_TOKEN, strong JWT_SECRET, and disable ALLOW_MOCK_PAYMENTS.');
+    process.exit(1);
+  }
+}
 const ALLOWED_ORIGINS = cfg('ALLOWED_ORIGINS', '')
   .split(',').map((s) => s.trim()).filter(Boolean);
 const COMMISSION = 0.3;
@@ -634,7 +642,6 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
 
     // ── Admin ──
     if (p.startsWith('/admin/')) {
-      if (PROD && ADMIN_TOKEN === 'admin-dev') return send(res, req, 503, { error: 'admin disabled: set a strong ADMIN_TOKEN' });
       if (!isAdmin(req)) return send(res, req, 401, { error: 'admin token required' });
       if (m === 'GET' && p === '/admin/pending') {
         const [published, users] = [await load('published'), await load('users')];
