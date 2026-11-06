@@ -55,6 +55,11 @@ const COMMISSION = 0.3;
 const PLATFORM_OWNER_ID = cfg('PLATFORM_OWNER_ID', '');
 const MAX_BODY = 512 * 1024; // 512 KB
 
+if (PROD && (JWT_SECRET === 'dev-secret' || ADMIN_TOKEN === 'admin-dev' || ALLOW_MOCK_PAYMENTS)) {
+  console.error('[FATAL] Insecure configuration in production. Aborting.');
+  process.exit(1);
+}
+
 // ── HTTPS JSON helper ────────────────────────────────────────────────────────
 function httpsJson(url, { method = 'POST', headers = {}, body, timeoutMs = 45000 } = {}) {
   return new Promise((resolve, reject) => {
