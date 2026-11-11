@@ -521,6 +521,7 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
       return send(res, req, 200, { pro: Boolean(u && u.pro), owned });
     }
     if (m === 'POST' && p === '/me/pro') {
+      if (!ALLOW_MOCK_PAYMENTS) return send(res, req, 403, { error: 'mock payments disabled' });
       const uid = bearer(req);
       if (!uid) return send(res, req, 401, { error: 'sign in required' });
       const users = await load('users');
@@ -532,6 +533,7 @@ Give a thorough, genuinely helpful answer (about 250-400 words): directly answer
     // Guest → sign-in migration: attach courses bought / Pro unlocked while
     // signed out to the now-signed-in account.
     if (m === 'POST' && p === '/me/claim') {
+      if (!ALLOW_MOCK_PAYMENTS) return send(res, req, 403, { error: 'mock payments disabled' });
       const uid = bearer(req);
       if (!uid) return send(res, req, 401, { error: 'sign in required' });
       const body = await readBody(req);
