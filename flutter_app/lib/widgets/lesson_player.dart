@@ -362,6 +362,7 @@ class _Controls extends StatelessWidget {
         IconButton(
           onPressed: onToggle,
           iconSize: 22,
+          tooltip: playing ? 'Pause' : 'Play',
           icon: Icon(playing ? Icons.pause : Icons.play_arrow,
               color: Colors.white),
         ),
